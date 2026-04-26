@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 class StartGame {
     const int SW_MAXIMIZE = 3;
     const string PROCESS_NAME = "HTGame";
-    const string START_IMAGE = "startgame1.png";
 
     [DllImport("user32.dll")]
     static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
@@ -18,16 +17,39 @@ class StartGame {
     static void LaunchGame(string gameDir) {
         Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"));
 
-        var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", START_IMAGE);
-        if (!File.Exists(imagePath))
+        var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
+        var imagePath2 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame2.png");
+        if (!File.Exists(imagePath1) || !File.Exists(imagePath2))
             return;
 
-        Thread.Sleep(5000);
+        Thread.Sleep(2000);
         while (true) {
             using var bitmap = Capture.CaptureScreen();
-            var point = ImageMatch.FindImageCenter(bitmap, imagePath);
+            var point = ImageMatch.FindImageCenter(bitmap, imagePath1);
             if (point != null) {
                 AutoClick.Click(point.Value.X, point.Value.Y);
+                break;
+            }
+
+            Thread.Sleep(500);
+        }
+
+        Thread.Sleep(7000);
+        while (true) {
+            using var bitmap = Capture.CaptureScreen();
+            var point = ImageMatch.FindImageCenter(bitmap, imagePath2);
+            if (point != null)
+                break;
+
+            Thread.Sleep(500);
+        }
+
+        Thread.Sleep(1000);
+        while (true) {
+            using var bitmap = Capture.CaptureScreen();
+            var point = ImageMatch.FindImageCenter(bitmap, imagePath2);
+            if (point == null) {
+                AutoClick.Click(960, 540);
                 break;
             }
 
