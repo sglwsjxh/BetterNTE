@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using OpenCvSharp;
 
 class StartGame {
     const int SW_MAXIMIZE = 3;
@@ -19,13 +20,17 @@ class StartGame {
 
         var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
         var imagePath2 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame2.png");
-        if (!File.Exists(imagePath1) || !File.Exists(imagePath2))
+		var template1 = ImageMatch.GetTemplate(imagePath1);
+		var template2 = ImageMatch.GetTemplate(imagePath2);
+		if (template1 == null || template2 == null)
             return;
+
+		using var frame = new Mat();
 
         Thread.Sleep(2000);
         while (true) {
-            using var bitmap = Capture.CaptureScreen();
-            var point = ImageMatch.FindImageCenter(bitmap, imagePath1);
+			Capture.CaptureScreen(frame);
+			var point = ImageMatch.FindImageCenter(frame, template1);
             if (point != null) {
                 AutoClick.Click(point.Value.X, point.Value.Y);
                 break;
@@ -36,8 +41,8 @@ class StartGame {
 
         Thread.Sleep(7000);
         while (true) {
-            using var bitmap = Capture.CaptureScreen();
-            var point = ImageMatch.FindImageCenter(bitmap, imagePath2);
+			Capture.CaptureScreen(frame);
+			var point = ImageMatch.FindImageCenter(frame, template2);
             if (point != null)
                 break;
 
@@ -46,8 +51,8 @@ class StartGame {
 
         Thread.Sleep(1000);
         while (true) {
-            using var bitmap = Capture.CaptureScreen();
-            var point = ImageMatch.FindImageCenter(bitmap, imagePath2);
+			Capture.CaptureScreen(frame);
+			var point = ImageMatch.FindImageCenter(frame, template2);
             if (point == null) {
                 AutoClick.Click(960, 540);
                 break;
