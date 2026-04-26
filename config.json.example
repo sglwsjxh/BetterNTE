@@ -1,3 +1,9 @@
 {
-    "game_install_dir": "YOUR_GAME_INSTALL_DIR"
+    "game_install_dir": "YOUR_GAME_INSTALL_DIR",
+    "options": {
+        "autoteleport": true,
+        "autopickup": true,
+        "autoskip": true,
+        "autoclick": true
+    }
 }

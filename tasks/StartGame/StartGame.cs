@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text.Json.Nodes;
 
 class StartGame {
     const int SW_MAXIMIZE = 3;
@@ -10,12 +9,6 @@ class StartGame {
     static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
     [DllImport("user32.dll")]
     static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    static string LoadConfig() {
-        var configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
-        var node = JsonNode.Parse(File.ReadAllText(configPath));
-        return node!["game_install_dir"]!.GetValue<string>();
-    }
 
     static bool IsGameRunning() {
         return Process.GetProcessesByName(PROCESS_NAME).Length > 0;
@@ -34,10 +27,10 @@ class StartGame {
     }
 
     public static void Run() {
-        var gameDir = LoadConfig();
+        var config = Config.Load();
         if (IsGameRunning())
             MaximizeGame();
         else
-            LaunchGame(gameDir);
+            LaunchGame(config.GameInstallDir);
     }
 }
