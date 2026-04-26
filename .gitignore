@@ -1,0 +1,14 @@
+# build
+obj/
+bin/
+
+# ide
+.vscode/
+.idea/
+
+# config
+config.json
+
+# log
+logs/
+*.log
