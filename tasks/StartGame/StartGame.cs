@@ -18,10 +18,11 @@ class StartGame {
     static void LaunchGame(string gameDir) {
         Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"));
 
-        var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", START_IMAGE);
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", START_IMAGE);
         if (!File.Exists(imagePath))
             return;
 
+        Thread.Sleep(5000);
         while (true) {
             using var bitmap = Capture.CaptureScreen();
             var point = ImageMatch.FindImageCenter(bitmap, imagePath);
