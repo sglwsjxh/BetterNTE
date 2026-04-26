@@ -1,14 +1,14 @@
-# BetterNTE
+<h1 align="center">BetterNTE · 更好的异环</h1>
 
 <p align="center">
-	<b>异环辅助自动化脚本</b><br/>
-	<sub>轻量、以图像识别驱动的任务自动化</sub>
+	<b>以图像识别驱动的轻量任务自动化</b>
 </p>
 
 <p align="center">
-	<img src="https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="dotnet" />
-	<img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="windows" />
-	<img src="https://img.shields.io/badge/Engine-OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white" alt="opencv" />
+	<img src="https://img.shields.io/badge/license-GPL--3.0-2ea44f" alt="GPL-3.0 License" />
+	<img src="https://img.shields.io/badge/platform-Windows-1f6feb" alt="Windows" />
+	<img src="https://img.shields.io/badge/runtime-.NET%2010-6f42c1" alt=".NET 10" />
+	<img src="https://img.shields.io/badge/engine-OpenCV-f97316" alt="OpenCV" />
 </p>
 
 ---
@@ -45,4 +45,4 @@ dotnet run
 
 ## 许可证
 
-GPL-3.0 License
+本项目采用 [GPL-3.0 License](LICENSE) 许可证
