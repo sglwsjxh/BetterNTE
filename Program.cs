@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using OpenCvSharp;
 
 if (!Environment.IsPrivilegedProcess) {
     var psi = new ProcessStartInfo(Environment.ProcessPath!) { Verb = "runas", UseShellExecute = true };
@@ -7,19 +6,37 @@ if (!Environment.IsPrivilegedProcess) {
     return;
 }
 
-const string PROCESS_NAME = "HTGame";
-
 var config = Config.Load();
-StartGame.Run();
+var app = new Application(config);
 
-using var frame = new Mat();
-while (Process.GetProcessesByName(PROCESS_NAME).Length > 0) {
-    Capture.CaptureScreen(frame);
+System.Windows.Forms.Application.EnableVisualStyles();
+System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-    if (config.Options.AutoTeleport)
-        AutoTeleport.Run(frame);
+var menu = new ContextMenuStrip();
+menu.Items.Add("退出", null, (s, e) => {
+    app.Stop();
+    System.Windows.Forms.Application.Exit();
+});
 
-    Thread.Sleep(100);
+var iconPath = Path.Combine(AppContext.BaseDirectory, "logo", "logo.png");
+var trayIconAsset = SystemIcons.Application;
+if (File.Exists(iconPath)) {
+    using var bmp = new Bitmap(iconPath);
+    trayIconAsset = Icon.FromHandle(bmp.GetHicon());
 }
 
-ImageMatch.ClearTemplateCache();
+using var notifyIcon = new NotifyIcon {
+    Icon = trayIconAsset,
+    Text = "BetterNTE",
+    ContextMenuStrip = menu,
+    Visible = true
+};
+
+app.OnExit += () => {
+    notifyIcon.Visible = false;
+    System.Windows.Forms.Application.Exit();
+};
+
+Task.Run(() => app.Run());
+
+System.Windows.Forms.Application.Run();

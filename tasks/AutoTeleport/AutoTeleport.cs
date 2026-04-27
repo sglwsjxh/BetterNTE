@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using OpenCvSharp;
 
-static class AutoTeleport {
+static class AutoTeleportTask {
 	const string PROCESS_NAME = "HTGame";
 	const string TEMPLATE_NAME = "autoteleport.png";
 	static readonly TimeSpan _clickInterval = TimeSpan.FromMilliseconds(800);
