@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>logo\logo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

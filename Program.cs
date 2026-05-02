@@ -19,7 +19,7 @@ menu.Items.Add("退出", null, (s, e) => {
     System.Windows.Forms.Application.Exit();
 });
 
-var iconPath = Path.Combine(AppContext.BaseDirectory, "logo", "logo.png");
+var iconPath = Path.Combine(AppContext.BaseDirectory, "logo", "logo.ico");
 var trayIconAsset = SystemIcons.Application;
 if (File.Exists(iconPath)) {
     using var bmp = new Bitmap(iconPath);
