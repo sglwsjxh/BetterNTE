@@ -4,8 +4,8 @@ class ImageMatch {
     static readonly object _sync = new();
     static readonly Dictionary<string, Mat> _templateCache = new();
 
-    public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9) {
-        var template = GetTemplate(imagePath);
+    public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9, double scale = 1.0) {
+        var template = GetTemplate(imagePath, scale);
         if (template == null)
             return null;
 
@@ -31,9 +31,10 @@ class ImageMatch {
         return (maxLoc.X + template.Width / 2, maxLoc.Y + template.Height / 2);
     }
 
-    public static Mat? GetTemplate(string imagePath) {
+    public static Mat? GetTemplate(string imagePath, double scale = 1.0) {
+        string cacheKey = $"{imagePath}_{scale:F4}";
         lock (_sync) {
-            if (_templateCache.TryGetValue(imagePath, out var cached))
+            if (_templateCache.TryGetValue(cacheKey, out var cached))
                 return cached;
 
             if (!File.Exists(imagePath))
@@ -45,7 +46,14 @@ class ImageMatch {
                 return null;
             }
 
-            _templateCache[imagePath] = template;
+            if (Math.Abs(scale - 1.0) > 0.001) {
+                var resized = new Mat();
+                Cv2.Resize(template, resized, new OpenCvSharp.Size(), scale, scale, InterpolationFlags.Area);
+                template.Dispose();
+                template = resized;
+            }
+
+            _templateCache[cacheKey] = template;
             return template;
         }
     }

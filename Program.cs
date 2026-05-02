@@ -9,6 +9,7 @@ if (!Environment.IsPrivilegedProcess) {
 var config = Config.Load();
 var app = new Application(config);
 
+System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 System.Windows.Forms.Application.EnableVisualStyles();
 System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
@@ -37,6 +38,6 @@ app.OnExit += () => {
     System.Windows.Forms.Application.Exit();
 };
 
-Task.Run(() => app.Run());
+_ = Task.Run(() => app.Run());
 
 System.Windows.Forms.Application.Run();

@@ -18,10 +18,12 @@ class StartGame {
     static void LaunchGame(string gameDir) {
         Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"));
 
+        double scale = System.Windows.Forms.Screen.PrimaryScreen!.Bounds.Height / 1080.0;
+
         var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
         var imagePath2 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame2.png");
-		var template1 = ImageMatch.GetTemplate(imagePath1);
-		var template2 = ImageMatch.GetTemplate(imagePath2);
+		var template1 = ImageMatch.GetTemplate(imagePath1, scale);
+		var template2 = ImageMatch.GetTemplate(imagePath2, scale);
 		if (template1 == null || template2 == null)
             return;
 
@@ -30,7 +32,7 @@ class StartGame {
         Thread.Sleep(2000);
         while (true) {
 			Capture.CaptureScreen(frame);
-			var point = ImageMatch.FindImageCenter(frame, template1);
+			var point = ImageMatch.FindImageCenter(frame, template1, 0.8);
             if (point != null) {
                 AutoClick.Click(point.Value.X, point.Value.Y);
                 break;
@@ -42,7 +44,7 @@ class StartGame {
         Thread.Sleep(7000);
         while (true) {
 			Capture.CaptureScreen(frame);
-			var point = ImageMatch.FindImageCenter(frame, template2);
+			var point = ImageMatch.FindImageCenter(frame, template2, 0.8);
             if (point != null)
                 break;
 
@@ -52,9 +54,9 @@ class StartGame {
         Thread.Sleep(1000);
         while (true) {
 			Capture.CaptureScreen(frame);
-			var point = ImageMatch.FindImageCenter(frame, template2);
+			var point = ImageMatch.FindImageCenter(frame, template2, 0.8);
             if (point == null) {
-                AutoClick.Click(960, 540);
+                AutoClick.Click((int)(960 * scale), (int)(540 * scale));
                 break;
             }
 
