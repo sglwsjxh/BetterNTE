@@ -16,10 +16,27 @@ class Application {
 
     public void Run() {
         _isRunning = true;
+
+        _ = Task.Run(() => {
+            while (_isRunning) {
+                var proc = Process.GetProcessesByName(PROCESS_NAME).FirstOrDefault();
+                if (proc != null) {
+                    proc.EnableRaisingEvents = true;
+                    proc.Exited += (s, e) => {
+                        Stop();
+                        OnExit?.Invoke();
+                        Environment.Exit(0);
+                    };
+                    break;
+                }
+                Thread.Sleep(1000);
+            }
+        });
+
         StartGame.Run();
 
         using var frame = new Mat();
-        while (_isRunning && Process.GetProcessesByName(PROCESS_NAME).Length > 0) {
+        while (_isRunning) {
             Capture.CaptureScreen(frame);
 
             if (_config.Options.AutoTeleport)

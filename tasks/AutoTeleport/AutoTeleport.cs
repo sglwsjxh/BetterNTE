@@ -3,7 +3,6 @@ using OpenCvSharp;
 
 static class AutoTeleportTask {
 	const string PROCESS_NAME = "HTGame";
-	const string TEMPLATE_NAME = "autoteleport.png";
 	static readonly TimeSpan _clickInterval = TimeSpan.FromMilliseconds(800);
 	static Mat? _template;
 	static bool _templateLoaded;
@@ -15,7 +14,7 @@ static class AutoTeleportTask {
 		if (!EnsureTemplate())
 			return;
 
-		var point = ImageMatch.FindImageCenter(frame, _template!, 0.9);
+		var point = ImageMatch.FindImageCenter(frame, _template!, 0.8);
 		if (point == null)
 			return;
 
@@ -31,7 +30,7 @@ static class AutoTeleportTask {
 		if (_templateLoaded)
 			return _template != null;
 
-		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", TEMPLATE_NAME);
+		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", "autoteleport.png");
 		_template = ImageMatch.GetTemplate(imagePath);
 		_templateLoaded = true;
 		return _template != null;

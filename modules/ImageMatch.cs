@@ -4,7 +4,9 @@ class ImageMatch {
     static readonly object _sync = new();
     static readonly Dictionary<string, Mat> _templateCache = new();
 
-    public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9, double scale = 1.0) {
+    public static double ScreenScale => System.Windows.Forms.Screen.PrimaryScreen!.Bounds.Height / 1080.0;
+
+    public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9, double? scale = null) {
         var template = GetTemplate(imagePath, scale);
         if (template == null)
             return null;
@@ -31,8 +33,9 @@ class ImageMatch {
         return (maxLoc.X + template.Width / 2, maxLoc.Y + template.Height / 2);
     }
 
-    public static Mat? GetTemplate(string imagePath, double scale = 1.0) {
-        string cacheKey = $"{imagePath}_{scale:F4}";
+    public static Mat? GetTemplate(string imagePath, double? scale = null) {
+        double actualScale = scale ?? ScreenScale;
+        string cacheKey = $"{imagePath}_{actualScale:F4}";
         lock (_sync) {
             if (_templateCache.TryGetValue(cacheKey, out var cached))
                 return cached;
@@ -46,9 +49,9 @@ class ImageMatch {
                 return null;
             }
 
-            if (Math.Abs(scale - 1.0) > 0.001) {
+            if (Math.Abs(actualScale - 1.0) > 0.001) {
                 var resized = new Mat();
-                Cv2.Resize(template, resized, new OpenCvSharp.Size(), scale, scale, InterpolationFlags.Area);
+                Cv2.Resize(template, resized, new OpenCvSharp.Size(), actualScale, actualScale, InterpolationFlags.Area);
                 template.Dispose();
                 template = resized;
             }
