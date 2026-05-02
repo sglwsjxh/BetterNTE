@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <None Update="config.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="config.json.example" CopyToOutputDirectory="PreserveNewest" />
     <None Update="logo\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

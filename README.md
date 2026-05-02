@@ -24,7 +24,24 @@
 
 ---
 
+## 适用平台
+
+本项目采用 `win32api`，目前仅支持 `Windows` 平台
+
+---
+
 ## 快速开始
+
+1. 从 [Release](https://github.com/sglwsjxh/BetterNTE/releases/latest) 页面下载最新版本的 `BetterNTE`
+2. 复制并配置 `config.json`
+
+```bash
+cp config.json.example config.json
+```
+
+---
+
+## 源码构建
 
 1. 安装 .NET 10 SDK（Windows）
 2. 复制并配置 `config.json`
