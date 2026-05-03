@@ -1,51 +1,48 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using OpenCvSharp;
 
 static class AutoTeleportTask {
-	const string PROCESS_NAME = "HTGame";
-	const int SW_RESTORE = 9;
+	const double MATCH_THRESHOLD = 0.75;
 	static readonly TimeSpan _clickInterval = TimeSpan.FromMilliseconds(800);
-	static Mat? _template;
-	static bool _templateLoaded;
+	static readonly TimeSpan _logInterval = TimeSpan.FromSeconds(1);
 	static DateTime _lastClickAt = DateTime.MinValue;
+	static DateTime _lastLogAt = DateTime.MinValue;
 
-	[DllImport("user32.dll")]
-	static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
-	[DllImport("user32.dll")]
-	static extern bool SetForegroundWindow(IntPtr hWnd);
+	public static bool Run(Mat frame) {
+		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", "autoteleport.png");
+		var template = ImageMatch.GetTemplate(imagePath);
+		if (template == null) {
+			LogThrottled($"AutoTeleport template unavailable. Path={imagePath}");
+			return false;
+		}
 
-	public static void Run(Mat frame) {
-		var proc = Process.GetProcessesByName(PROCESS_NAME).FirstOrDefault();
-		if (proc == null)
-			return;
-		if (!EnsureTemplate())
-			return;
+		var match = ImageMatch.FindBestMatch(frame, template);
+		if (match == null) {
+			LogThrottled($"AutoTeleport match skipped. Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}");
+			return false;
+		}
 
-		var point = ImageMatch.FindImageCenter(frame, _template!, 0.8);
-		if (point == null)
-			return;
+		var point = (X: match.Value.X + template.Width / 2, Y: match.Value.Y + template.Height / 2);
+		LogThrottled($"AutoTeleport match. Score={match.Value.Score:F4}, Threshold={MATCH_THRESHOLD:F2}, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}, TopLeft=({match.Value.X},{match.Value.Y}), Center=({point.X},{point.Y})");
+
+		if (match.Value.Score < MATCH_THRESHOLD)
+			return false;
 
 		var now = DateTime.UtcNow;
 		if (now - _lastClickAt < _clickInterval)
-			return;
+			return true;
 
-		if (proc.MainWindowHandle != IntPtr.Zero) {
-			ShowWindowAsync(proc.MainWindowHandle, SW_RESTORE);
-			SetForegroundWindow(proc.MainWindowHandle);
-		}
-
-		AutoClick.Click(point.Value.X, point.Value.Y);
+		AutoClick.Click(point.X, point.Y);
 		_lastClickAt = now;
+		AppLog.Write($"AutoTeleport clicked. Score={match.Value.Score:F4}, Center=({point.X},{point.Y})");
+		return true;
 	}
 
-	static bool EnsureTemplate() {
-		if (_templateLoaded)
-			return _template != null;
+	static void LogThrottled(string message) {
+		var now = DateTime.UtcNow;
+		if (now - _lastLogAt < _logInterval)
+			return;
 
-		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", "autoteleport.png");
-		_template = ImageMatch.GetTemplate(imagePath);
-		_templateLoaded = true;
-		return _template != null;
+		_lastLogAt = now;
+		AppLog.Write(message);
 	}
 }

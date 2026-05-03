@@ -15,6 +15,10 @@ class Capture {
 	[DllImport("user32.dll")]
 	static extern int GetSystemMetrics(int nIndex);
 
+	public static (int Width, int Height) GetScreenSize() {
+		return (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+	}
+
 	public static Mat CaptureScreen() {
 		var frame = new Mat();
 		CaptureScreen(frame);
@@ -22,8 +26,7 @@ class Capture {
 	}
 
 	public static void CaptureScreen(Mat target) {
-		var width = GetSystemMetrics(SM_CXSCREEN);
-		var height = GetSystemMetrics(SM_CYSCREEN);
+		var (width, height) = GetScreenSize();
 
 		lock (_sync) {
 			EnsureBuffer(width, height);

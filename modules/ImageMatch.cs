@@ -1,10 +1,17 @@
 using OpenCvSharp;
 
 class ImageMatch {
+    const double BASE_SCREEN_HEIGHT = 1080.0;
     static readonly object _sync = new();
     static readonly Dictionary<string, Mat> _templateCache = new();
 
-    public static double ScreenScale => System.Windows.Forms.Screen.PrimaryScreen!.Bounds.Height / 1080.0;
+    public static double ScreenScale { get; private set; } = 1.0;
+
+    public static void InitializeScreenScale() {
+        var screenSize = Capture.GetScreenSize();
+        ScreenScale = screenSize.Height / BASE_SCREEN_HEIGHT;
+        AppLog.Write($"Screen scale initialized. Screen={screenSize.Width}x{screenSize.Height}, Scale={ScreenScale:F4}");
+    }
 
     public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9, double? scale = null) {
         var template = GetTemplate(imagePath, scale);
@@ -15,6 +22,17 @@ class ImageMatch {
     }
 
     public static (int X, int Y)? FindImageCenter(Mat bitmap, Mat template, double threshold = 0.9) {
+        var match = FindBestMatch(bitmap, template);
+        if (match == null)
+            return null;
+
+        if (match.Value.Score < threshold)
+            return null;
+
+        return (match.Value.X + template.Width / 2, match.Value.Y + template.Height / 2);
+    }
+
+    public static (int X, int Y, double Score)? FindBestMatch(Mat bitmap, Mat template) {
         if (bitmap.Empty())
             return null;
         if (template.Empty())
@@ -27,10 +45,7 @@ class ImageMatch {
         Cv2.MatchTemplate(bitmap, template, result, TemplateMatchModes.CCoeffNormed);
         Cv2.MinMaxLoc(result, out _, out var maxVal, out _, out var maxLoc);
 
-        if (maxVal < threshold)
-            return null;
-
-        return (maxLoc.X + template.Width / 2, maxLoc.Y + template.Height / 2);
+        return (maxLoc.X, maxLoc.Y, maxVal);
     }
 
     public static Mat? GetTemplate(string imagePath, double? scale = null) {
@@ -41,13 +56,20 @@ class ImageMatch {
                 return cached;
 
             if (!File.Exists(imagePath))
+            {
+                AppLog.Write($"Template missing. Path={imagePath}, Scale={actualScale:F4}");
                 return null;
+            }
 
             var template = Cv2.ImRead(imagePath, ImreadModes.Color);
             if (template.Empty()) {
+                AppLog.Write($"Template failed to load. Path={imagePath}, Scale={actualScale:F4}");
                 template.Dispose();
                 return null;
             }
+
+            var originalWidth = template.Width;
+            var originalHeight = template.Height;
 
             if (Math.Abs(actualScale - 1.0) > 0.001) {
                 var resized = new Mat();
@@ -57,6 +79,7 @@ class ImageMatch {
             }
 
             _templateCache[cacheKey] = template;
+            AppLog.Write($"Template loaded. Path={imagePath}, Scale={actualScale:F4}, Original={originalWidth}x{originalHeight}, Actual={template.Width}x{template.Height}");
             return template;
         }
     }
@@ -67,6 +90,7 @@ class ImageMatch {
                 item.Dispose();
 
             _templateCache.Clear();
+            AppLog.Write("Template cache cleared");
         }
     }
 }
