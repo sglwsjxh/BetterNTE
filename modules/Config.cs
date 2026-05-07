@@ -10,6 +10,8 @@ class Options {
     public bool AutoSkip { get; set; }
     [JsonPropertyName("autodismiss")]
     public bool AutoDismiss { get; set; }
+    [JsonPropertyName("autoclose")]
+    public bool AutoClose { get; set; }
     [JsonPropertyName("autoclick")]
     public bool AutoClick { get; set; }
 }

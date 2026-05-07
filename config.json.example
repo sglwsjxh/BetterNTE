@@ -5,6 +5,7 @@
         "autopickup": true,
         "autoskip": true,
         "autodismiss": true,
+        "autoclose": true,
         "autoclick": true
     }
 }

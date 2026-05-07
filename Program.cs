@@ -1,4 +1,12 @@
 ﻿using System.Diagnostics;
+using System.Threading;
+
+bool createdNew;
+using var mutex = new Mutex(true, "Global\\BetterNTE_SingleInstance_Mutex", out createdNew);
+if (!createdNew) {
+    System.Windows.Forms.MessageBox.Show("BetterNTE 已经在运行中！", "提示", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+    return;
+}
 
 System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 System.Windows.Forms.Application.EnableVisualStyles();
