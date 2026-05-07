@@ -1,6 +1,6 @@
 using OpenCvSharp;
 
-static class AutoTeleportTask {
+static class AutoSkipTask {
 	const double MATCH_THRESHOLD = 0.85;
 	static readonly TimeSpan _clickInterval = TimeSpan.FromMilliseconds(800);
 	static readonly TimeSpan _logInterval = TimeSpan.FromSeconds(1);
@@ -8,21 +8,21 @@ static class AutoTeleportTask {
 	static DateTime _lastLogAt = DateTime.MinValue;
 
 	public static bool Run(Mat frame) {
-		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", "autoteleport.png");
+		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "autoskip.png");
 		var template = ImageMatch.GetTemplate(imagePath);
 		if (template == null) {
-			LogThrottled($"AutoTeleport template unavailable. Path={imagePath}");
+			LogThrottled($"AutoSkip template unavailable. Path={imagePath}");
 			return false;
 		}
 
 		var match = ImageMatch.FindBestMatch(frame, template);
 		if (match == null) {
-			LogThrottled($"AutoTeleport match skipped. Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}");
+			LogThrottled($"AutoSkip match skipped. Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}");
 			return false;
 		}
 
 		var point = (X: match.Value.X + template.Width / 2, Y: match.Value.Y + template.Height / 2);
-		LogThrottled($"AutoTeleport match. Score={match.Value.Score:F4}, Threshold={MATCH_THRESHOLD:F2}, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}, TopLeft=({match.Value.X},{match.Value.Y}), Center=({point.X},{point.Y})");
+		LogThrottled($"AutoSkip match. Score={match.Value.Score:F4}, Threshold={MATCH_THRESHOLD:F2}, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}, TopLeft=({match.Value.X},{match.Value.Y}), Center=({point.X},{point.Y})");
 
 		if (match.Value.Score < MATCH_THRESHOLD)
 			return false;
@@ -33,7 +33,7 @@ static class AutoTeleportTask {
 
 		AutoClick.Click(point.X, point.Y);
 		_lastClickAt = now;
-		AppLog.Write($"AutoTeleport clicked. Score={match.Value.Score:F4}, Center=({point.X},{point.Y})");
+		AppLog.Write($"AutoSkip clicked. Score={match.Value.Score:F4}, Center=({point.X},{point.Y})");
 		return true;
 	}
 

@@ -4,7 +4,7 @@ using OpenCvSharp;
 
 class StartGame {
     const int SW_MAXIMIZE = 3;
-    const double MATCH_THRESHOLD = 0.75;
+    const double MATCH_THRESHOLD = 0.78;
     const string PROCESS_NAME = "HTGame";
     static readonly TimeSpan _postLaunchLogInterval = TimeSpan.FromSeconds(1);
     static Mat? _startGame2Template;

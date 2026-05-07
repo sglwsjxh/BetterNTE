@@ -4,6 +4,7 @@
         "autoteleport": true,
         "autopickup": true,
         "autoskip": true,
+        "autodismiss": true,
         "autoclick": true
     }
 }

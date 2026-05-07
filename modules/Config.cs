@@ -8,6 +8,8 @@ class Options {
     public bool AutoPickup { get; set; }
     [JsonPropertyName("autoskip")]
     public bool AutoSkip { get; set; }
+    [JsonPropertyName("autodismiss")]
+    public bool AutoDismiss { get; set; }
     [JsonPropertyName("autoclick")]
     public bool AutoClick { get; set; }
 }

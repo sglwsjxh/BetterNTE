@@ -36,6 +36,12 @@ class Application {
                 AppLog.Write("StartGame2 checks disabled after AutoTeleport target was found");
             }
 
+            if (_config.Options.AutoDismiss && _loopCount % 5 == 0)
+                AutoDismissTask.Run(frame);
+
+            if (_config.Options.AutoSkip && _loopCount % 3 == 0)
+                AutoSkipTask.Run(frame);
+
             if (!_skipStartGame2 && _loopCount % 3 == 0)
                 _skipStartGame2 = StartGame.RunPostLaunch(frame);
 
