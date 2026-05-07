@@ -39,9 +39,11 @@ class Application {
             if (!_skipStartGame2 && _loopCount % 3 == 0)
                 _skipStartGame2 = StartGame.RunPostLaunch(frame);
 
+            // HoldToRepeatTask.Update();
+
             _loopCount++;
 
-            Thread.Sleep(100);
+            Thread.Sleep(50);
         }
 
         ImageMatch.ClearTemplateCache();
