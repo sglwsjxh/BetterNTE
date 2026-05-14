@@ -33,9 +33,9 @@ static class AutoCloseTask {
 		if (now - _lastClickAt < _clickInterval)
 			return true;
 
-		AutoClick.Click(point.X, point.Y);
+		AutoClick.SendKeyboard(0x1B);
 		_lastClickAt = now;
-		AppLog.Write($"AutoClose clicked. Score={match.Value.Score:F4}, Center=({point.X},{point.Y})");
+		AppLog.Write($"AutoClose sent ESC. Score={match.Value.Score:F4}, Center=({point.X},{point.Y})");
 		return true;
 	}
 
