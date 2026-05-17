@@ -5,6 +5,7 @@ bin/
 # ide
 .vscode/
 .idea/
+AGENTS.md
 
 # config
 config.json

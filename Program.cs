@@ -33,6 +33,28 @@ var app = new Application(config);
 var uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
 var menu = new ContextMenuStrip();
+
+ToolStripMenuItem AddToggle(string label, bool initialChecked, Action<bool> setter) {
+    var item = new ToolStripMenuItem(label) { Checked = initialChecked };
+    item.Click += (s, e) => {
+        item.Checked = !item.Checked;
+        setter(item.Checked);
+        Config.Save(config);
+        AppLog.Write($"Config toggle: {label}={item.Checked}");
+    };
+    menu.Items.Add(item);
+    return item;
+}
+
+AddToggle("自动传送", config.Options.AutoTeleport, v => config.Options.AutoTeleport = v);
+AddToggle("自动拾取", config.Options.AutoPickup, v => config.Options.AutoPickup = v);
+AddToggle("自动跳过剧情", config.Options.AutoSkip, v => config.Options.AutoSkip = v);
+AddToggle("自动驱散", config.Options.AutoDismiss, v => config.Options.AutoDismiss = v);
+AddToggle("自动关闭弹窗", config.Options.AutoClose, v => config.Options.AutoClose = v);
+AddToggle("自动点击", config.Options.AutoClick, v => config.Options.AutoClick = v);
+
+menu.Items.Add(new ToolStripSeparator());
+
 menu.Items.Add("退出", null, (s, e) => {
     AppLog.Write("Exit requested from tray menu");
     app.Stop();

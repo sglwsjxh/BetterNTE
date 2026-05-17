@@ -44,4 +44,9 @@ static class Config {
         var json = File.ReadAllText(_path);
         return JsonSerializer.Deserialize<GameConfig>(json)!;
     }
+
+    public static void Save(GameConfig config) {
+        var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(_path, json);
+    }
 }
