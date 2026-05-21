@@ -20,11 +20,32 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    # 桌面应用单文件发布（WinForms + WPF），含压缩减少体积
     - name: Publish
-      run: dotnet publish BetterNTE.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out
+      run: >
+        dotnet publish BetterNTE.csproj
+        -c Release -r win-x64 --self-contained true
+        -p:PublishSingleFile=true
+        -p:IncludeNativeLibrariesForSelfExtract=true
+        -p:EnableCompressionInSingleFile=true
+        -o out
 
     - name: Package into ZIP
       run: Compress-Archive -Path out\* -DestinationPath BetterNTE-windows-x64.zip
+
+    # 根据 tag 判断是否为 prerelease
+    # v1.0.0       → 正式 release
+    # v1.0.0-beta1 → prerelease
+    - name: Check if prerelease
+      id: check_prerelease
+      shell: pwsh
+      run: |
+        $tag = "${{ github.ref_name }}"
+        if ($tag -match '-') {
+          Write-Output "is_prerelease=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        } else {
+          Write-Output "is_prerelease=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        }
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
@@ -32,4 +53,4 @@ jobs:
         files: BetterNTE-windows-x64.zip
         generate_release_notes: true
         draft: false
-        prerelease: false
+        prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
