@@ -33,8 +33,10 @@ static class HoldToRepeatTask {
         GetWindowThreadProcessId(hwnd, out uint activePid);
 
         if ((DateTime.Now - _lastGameCheck).TotalSeconds > 5 || _gameProcessId == -1) {
-            var proc = Process.GetProcessesByName(StartGame.ProcessName).FirstOrDefault();
-            _gameProcessId = proc?.Id ?? -1;
+            var procs = Process.GetProcessesByName(StartGame.ProcessName);
+            var pid = procs.Length > 0 ? procs[0].Id : -1;
+            foreach (var p in procs) p.Dispose();
+            _gameProcessId = pid;
             _lastGameCheck = DateTime.Now;
         }
 

@@ -1,10 +1,20 @@
 # build
 obj/
 bin/
+out/
+tempbuild/
 
 # ide
 .vscode/
 .idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# tooling
+.codegraph/
+.sisyphus/
 AGENTS.md
 
 # config
@@ -13,3 +23,7 @@ config.json
 # log
 logs/
 *.log
+
+# os
+Thumbs.db
+.DS_Store

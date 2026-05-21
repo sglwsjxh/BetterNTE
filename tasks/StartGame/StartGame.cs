@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using OpenCvSharp;
 
 class StartGame {
@@ -26,12 +27,22 @@ class StartGame {
     static extern bool SetForegroundWindow(IntPtr hWnd);
 
     static bool IsGameRunning() {
-        return Process.GetProcessesByName(PROCESS_NAME).Length > 0;
+        var procs = Process.GetProcessesByName(PROCESS_NAME);
+        var exists = procs.Length > 0;
+        foreach (var p in procs) p.Dispose();
+        return exists;
     }
 
-    static void LaunchGame(string gameDir) {
+    const int LAUNCH_MAX_ATTEMPTS = 60;
+    internal const int WAIT_PROCESS_MAX_ATTEMPTS = 60;
+
+    static void LaunchGame(string gameDir, CancellationToken cancellationToken) {
+        if (cancellationToken.IsCancellationRequested) {
+            AppLog.Write("StartGame launch cancelled before starting process");
+            return;
+        }
         AppLog.Write($"StartGame launching. GameDir={gameDir}");
-        Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"));
+        Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"))?.Dispose();
 
         var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
 		var template1 = ImageMatch.GetTemplate(imagePath1);
@@ -42,10 +53,17 @@ class StartGame {
 
 		using var frame = new Mat();
 
-        Thread.Sleep(2000);
+        if (cancellationToken.WaitHandle.WaitOne(2000))
+            return;
+
         var attempts = 0;
-        while (true) {
+        while (!cancellationToken.IsCancellationRequested) {
 			attempts++;
+            if (attempts > LAUNCH_MAX_ATTEMPTS) {
+                AppLog.Write($"StartGame launch timeout after {LAUNCH_MAX_ATTEMPTS} attempts");
+                return;
+            }
+
 			Capture.CaptureScreen(frame);
             var match = ImageMatch.FindBestMatch(frame, template1);
             LogStartGameMatch("startgame1", attempts, frame, template1, match, MATCH_THRESHOLD);
@@ -55,23 +73,33 @@ class StartGame {
             if (point != null) {
                 AutoClick.Click(point.Value.X, point.Value.Y);
                 AppLog.Write($"StartGame clicked startgame1. Attempts={attempts}, Center=({point.Value.X},{point.Value.Y})");
-                break;
+                return;
             }
 
-            Thread.Sleep(500);
+            if (cancellationToken.WaitHandle.WaitOne(500))
+                return;
         }
     }
 
     static void MaximizeGame() {
-        var proc = Process.GetProcessesByName(PROCESS_NAME).FirstOrDefault();
+        var procs = Process.GetProcessesByName(PROCESS_NAME);
+        var proc = procs.Length > 0 ? procs[0] : null;
+        for (int i = 1; i < procs.Length; i++) procs[i].Dispose();
         if (proc != null) {
-            AppLog.Write($"StartGame maximizing existing process. ProcessId={proc.Id}, MainWindowHandle={proc.MainWindowHandle}");
-            ShowWindowAsync(proc.MainWindowHandle, SW_MAXIMIZE);
-            SetForegroundWindow(proc.MainWindowHandle);
+            var pid = proc.Id;
+            var hwnd = proc.MainWindowHandle;
+            AppLog.Write($"StartGame maximizing existing process. ProcessId={pid}, MainWindowHandle={hwnd}");
+            ShowWindowAsync(hwnd, SW_MAXIMIZE);
+            SetForegroundWindow(hwnd);
+            proc.Dispose();
         }
     }
 
     public static void RunStartup(GameConfig config) {
+        RunStartup(config, CancellationToken.None);
+    }
+
+    public static void RunStartup(GameConfig config, CancellationToken cancellationToken) {
         _postLaunchState = PostLaunchState.WaitingForMarker;
         _postLaunchAttempts = 0;
 
@@ -79,7 +107,7 @@ class StartGame {
             AppLog.Write("StartGame found existing game process");
             MaximizeGame();
         } else {
-            LaunchGame(config.GameInstallDir);
+            LaunchGame(config.GameInstallDir, cancellationToken);
         }
     }
 

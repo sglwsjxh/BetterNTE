@@ -2,6 +2,8 @@ static class AppLog {
     static readonly object _sync = new();
     static string _logPath = "";
 
+    public static event Action<string>? OnLogWritten;
+
     public static void Initialize() {
         var logDir = Path.Combine(Environment.CurrentDirectory, "logs");
         Directory.CreateDirectory(logDir);
@@ -13,8 +15,11 @@ static class AppLog {
         if (string.IsNullOrEmpty(_logPath))
             return;
 
+        var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
         lock (_sync) {
-            File.AppendAllText(_logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}");
+            File.AppendAllText(_logPath, $"{line}{Environment.NewLine}");
         }
+
+        OnLogWritten?.Invoke(line);
     }
 }
