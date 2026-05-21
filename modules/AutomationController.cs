@@ -18,7 +18,6 @@ class AutomationController {
     Application? _application;
     CancellationTokenSource? _stopSource;
     Task? _runTask;
-    Task? _watchTask;
     EngineStatus _status = EngineStatus.Stopped;
 
     public bool IsRunning => Status == EngineStatus.Starting || Status == EngineStatus.Running || Status == EngineStatus.Stopping;
@@ -31,7 +30,6 @@ class AutomationController {
 
     public event Action<EngineStatus>? StatusChanged;
     public event Action<string>? LogEmitted;
-    public event Action<string>? GameProcessExited;
     public event Action<string>? ErrorOccurred;
 
     public AutomationController() {
@@ -50,7 +48,6 @@ class AutomationController {
 
             var token = _stopSource.Token;
             _runTask = Task.Run(() => RunEngine(token), CancellationToken.None);
-            _watchTask = Task.Run(() => WatchGameProcessExit(token), CancellationToken.None);
         }
     }
 
@@ -165,40 +162,6 @@ class AutomationController {
                 return false;
         }
         return false;
-    }
-
-    void WatchGameProcessExit(CancellationToken cancellationToken) {
-        while (!cancellationToken.IsCancellationRequested) {
-            Process? proc = null;
-            try {
-                var procs = Process.GetProcessesByName(StartGame.ProcessName);
-                proc = procs.Length > 0 ? procs[0] : null;
-                for (int i = 1; i < procs.Length; i++) procs[i].Dispose();
-                if (proc == null) {
-                    if (cancellationToken.WaitHandle.WaitOne(1000))
-                        return;
-                    continue;
-                }
-
-                AppLog.Write($"Game process watcher attached. ProcessId={proc.Id}");
-                proc.WaitForExit();
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                var message = $"Game process exited. ProcessId={proc.Id}";
-                AppLog.Write(message);
-                if (Status == EngineStatus.Running) {
-                    GameProcessExited?.Invoke(message);
-                    Stop();
-                    return;
-                }
-
-                AppLog.Write("Game process exited while engine was not running");
-            } finally {
-                proc?.Dispose();
-            }
-        }
     }
 
     void HandleApplicationStatusChanged(EngineStatus status) {

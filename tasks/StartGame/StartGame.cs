@@ -42,7 +42,7 @@ class StartGame {
             return;
         }
         AppLog.Write($"StartGame launching. GameDir={gameDir}");
-        Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"))?.Dispose();
+        Process.Start(Path.Combine(gameDir, "NTELauncher", "NTELauncher.exe"))?.Dispose();
 
         var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
 		var template1 = ImageMatch.GetTemplate(imagePath1);

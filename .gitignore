@@ -24,6 +24,9 @@ config.json
 logs/
 *.log
 
+# screenshots
+tmp/
+
 # os
 Thumbs.db
 .DS_Store

@@ -16,6 +16,17 @@ public partial class MainWindow : Window {
     public MainWindow() {
         InitializeComponent();
         this.Loaded += MainWindow_Loaded;
+        this.StateChanged += (_, _) => {
+            MaximizeIconPath.Data = (PathGeometry)FindResource(WindowState == WindowState.Maximized ? "RestoreIcon" : "MaximizeIcon");
+        };
+        this.MouseDown += (_, e) => {
+            // Only DragMove if not clicking near window controls (top-right 140px)
+            if (e.ChangedButton == System.Windows.Input.MouseButton.Left) {
+                var pos = e.GetPosition(this);
+                if (pos.Y > 36 || pos.X < ActualWidth - 150)
+                    DragMove();
+            }
+        };
         _controller = ((App)System.Windows.Application.Current).Controller;
         
         LogListBox.ItemsSource = _logEntries;
@@ -33,60 +44,84 @@ public partial class MainWindow : Window {
             EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
         };
         this.BeginAnimation(UIElement.OpacityProperty, anim);
-        _ = LoadZZZArtworkAsync();
+        LoadNTEBackground();
     }
 
-    async System.Threading.Tasks.Task LoadZZZArtworkAsync() {
-        string[] urls = [
-            "https://zenless.hoyoverse.com/upload/content/2026/05/zzz_promo_1920.jpg",
-            "https://fastcdn.hoyoverse.com/static/2026/05/zzz_keyvisual.jpg",
-        ];
-        foreach (var url in urls) {
-            try {
-                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-                var bytes = await http.GetByteArrayAsync(url);
-                var img = new System.Windows.Media.Imaging.BitmapImage();
-                img.BeginInit();
-                img.StreamSource = new System.IO.MemoryStream(bytes);
-                img.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                img.EndInit();
-                ZZZArtworkImage.Source = img;
-                return;
-            } catch {
-            }
+    void LoadNTEBackground() {
+        var bgPath = Path.Combine(AppContext.BaseDirectory, "background", "background.png");
+        if (!File.Exists(bgPath))
+            bgPath = Path.Combine(Environment.CurrentDirectory, "background", "background.png");
+        if (File.Exists(bgPath)) {
+            var img = new System.Windows.Media.Imaging.BitmapImage();
+            img.BeginInit();
+            img.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            img.UriSource = new Uri(bgPath);
+            img.EndInit();
+            BackgroundImage.Source = img;
         }
     }
     
-    void LoadConfigToUI() {
+        void LoadConfigToUI() {
         var config = Config.Load();
         GamePathText.Text = config.GameInstallDir;
-        UpdateCardState(TeleportCard, TeleportStateText, TeleportStatus, config.Options.AutoTeleport);
-        // Pickup and Click not yet implemented — always show OFF
-        UpdateCardState(PickupCard, PickupStateText, PickupStatus, false);
-        UpdateCardState(SkipCard, SkipStateText, SkipStatus, config.Options.AutoSkip);
-        UpdateCardState(DismissCard, DismissStateText, DismissStatus, config.Options.AutoDismiss);
-        UpdateCardState(CloseCard, CloseStateText, CloseStatus, config.Options.AutoClose);
-        UpdateCardState(ClickCard, ClickStateText, ClickStatus, false);
+        UpdateCardState(TeleportCard, TeleportMainLabel, TeleportStateText, TeleportStatus, config.Options.AutoTeleport);
+        UpdateCardState(PickupCard, PickupMainLabel, PickupStateText, PickupStatus, false, configured: false);
+        UpdateCardState(SkipCard, SkipMainLabel, SkipStateText, SkipStatus, config.Options.AutoSkip);
+        UpdateCardState(DismissCard, DismissMainLabel, DismissStateText, DismissStatus, config.Options.AutoDismiss);
+        UpdateCardState(CloseCard, CloseMainLabel, CloseStateText, CloseStatus, config.Options.AutoClose);
+        UpdateCardState(ClickCard, ClickMainLabel, ClickStateText, ClickStatus, false, configured: false);
     }
     
-    void UpdateCardState(System.Windows.Controls.Button card, TextBlock textBlock, Border border, bool isOn) {
-        textBlock.Text = isOn ? "ON" : "OFF";
+    void UpdateCardState(System.Windows.Controls.Button card, TextBlock mainLabel, TextBlock stateText, Border statusBar, bool isOn, bool configured = true) {
+        stateText.Text = isOn ? "ON" : "OFF";
         
         var accent = ((System.Windows.Media.SolidColorBrush)FindResource("AccentColor")).Color;
-        var secondary = ((System.Windows.Media.SolidColorBrush)FindResource("SecondaryTextColor")).Color;
+        var error = ((System.Windows.Media.SolidColorBrush)FindResource("ErrorBrush")).Color;
         var cardBorder = ((System.Windows.Media.SolidColorBrush)FindResource("CardBorderColor")).Color;
+        var inactive = ((System.Windows.Media.SolidColorBrush)FindResource("InactiveBrush")).Color;
         
-        var textBrush = new SolidColorBrush(isOn ? secondary : accent);
-        textBlock.Foreground = textBrush;
-        textBrush.BeginAnimation(SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(isOn ? accent : secondary, TimeSpan.FromMilliseconds(200)));
+        System.Windows.Media.Color targetMain, targetState, targetBorder;
+        if (isOn) {
+            targetMain = accent;
+            targetState = accent;
+            targetBorder = accent;
+        } else if (configured) {
+            targetMain = error;
+            targetState = error;
+            targetBorder = error;
+        } else {
+            targetMain = inactive;
+            targetState = inactive;
+            targetBorder = inactive;
+        }
         
-        var borderBrush = new SolidColorBrush(isOn ? System.Windows.Media.Colors.Transparent : accent);
-        border.Background = borderBrush;
-        borderBrush.BeginAnimation(SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(isOn ? accent : System.Windows.Media.Colors.Transparent, TimeSpan.FromMilliseconds(200)));
-        
-        var cardBrush = new SolidColorBrush(isOn ? cardBorder : accent);
-        card.BorderBrush = cardBrush;
-        cardBrush.BeginAnimation(SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(isOn ? accent : cardBorder, TimeSpan.FromMilliseconds(200)));
+        if (mainLabel.Tag == null) {
+            mainLabel.Tag = mainLabel.Foreground;
+            mainLabel.Foreground = new SolidColorBrush(targetMain);
+            stateText.Foreground = new SolidColorBrush(targetState);
+            statusBar.Background = new SolidColorBrush(isOn ? accent : System.Windows.Media.Colors.Transparent);
+            card.BorderBrush = new SolidColorBrush(targetBorder);
+        } else {
+            var curMain = ((System.Windows.Media.SolidColorBrush)mainLabel.Foreground).Color;
+            mainLabel.Foreground = new SolidColorBrush(curMain);
+            ((System.Windows.Media.SolidColorBrush)mainLabel.Foreground).BeginAnimation(
+                SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(targetMain, TimeSpan.FromMilliseconds(200)));
+            
+            var curState = ((System.Windows.Media.SolidColorBrush)stateText.Foreground).Color;
+            stateText.Foreground = new SolidColorBrush(curState);
+            ((System.Windows.Media.SolidColorBrush)stateText.Foreground).BeginAnimation(
+                SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(targetState, TimeSpan.FromMilliseconds(200)));
+            
+            var curStatus = ((System.Windows.Media.SolidColorBrush)statusBar.Background).Color;
+            statusBar.Background = new SolidColorBrush(curStatus);
+            ((System.Windows.Media.SolidColorBrush)statusBar.Background).BeginAnimation(
+                SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(isOn ? accent : System.Windows.Media.Colors.Transparent, TimeSpan.FromMilliseconds(200)));
+            
+            var curBorder = ((System.Windows.Media.SolidColorBrush)card.BorderBrush).Color;
+            card.BorderBrush = new SolidColorBrush(curBorder);
+            ((System.Windows.Media.SolidColorBrush)card.BorderBrush).BeginAnimation(
+                SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(targetBorder, TimeSpan.FromMilliseconds(200)));
+        }
         
         if (isOn) {
             var pulseOpacity = new System.Windows.Media.Animation.DoubleAnimation {
@@ -95,16 +130,15 @@ public partial class MainWindow : Window {
                 AutoReverse = true,
                 RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
             };
-            border.BeginAnimation(UIElement.OpacityProperty, pulseOpacity);
+            statusBar.BeginAnimation(UIElement.OpacityProperty, pulseOpacity);
         } else {
-            border.BeginAnimation(UIElement.OpacityProperty, null);
-            border.Opacity = 1.0;
+            statusBar.BeginAnimation(UIElement.OpacityProperty, null);
+            statusBar.Opacity = 1.0;
         }
     }
     
     void StartButton_Click(object sender, RoutedEventArgs e) {
         if (_controller.IsRunning) {
-            // Offload Stop to background thread to avoid blocking UI up to 3s
             var ctrl = _controller;
             System.Threading.Tasks.Task.Run(() => ctrl.Stop());
         } else {
@@ -150,7 +184,7 @@ public partial class MainWindow : Window {
                     StatusText.Text = "停止中...";
                     break;
                 case EngineStatus.Stopped:
-                    StartButton.Content = "▶ Start";
+                    StartButton.Content = "▶ 启动";
                     StartButton.Background = (SolidColorBrush)FindResource("AccentBrush");
                     StartButton.IsEnabled = true;
                     StatusIndicator.Fill = (SolidColorBrush)FindResource("InactiveBrush");
@@ -160,7 +194,7 @@ public partial class MainWindow : Window {
                     RuntimeText.Text = "00:00:00";
                     break;
                 case EngineStatus.Error:
-                    StartButton.Content = "▶ Start";
+                    StartButton.Content = "▶ 启动";
                     StartButton.Background = (SolidColorBrush)FindResource("AccentBrush");
                     StatusIndicator.Fill = (SolidColorBrush)FindResource("ErrorBrush");
                     StatusText.Text = "错误";
@@ -252,19 +286,18 @@ public partial class MainWindow : Window {
         }
     }
     
-    void ToggleTask(System.Windows.Controls.Button card, TextBlock textBlock, Border border, Func<Options, bool> getter, Action<Options, bool> setter) {
+    void ToggleTask(System.Windows.Controls.Button card, TextBlock mainLabel, TextBlock stateText, Border statusBar, Func<Options, bool> getter, Action<Options, bool> setter) {
         var config = Config.Load();
         bool newValue = !getter(config.Options);
         setter(config.Options, newValue);
         _controller.UpdateConfig(config);
-        UpdateCardState(card, textBlock, border, newValue);
+        UpdateCardState(card, mainLabel, stateText, statusBar, newValue);
     }
     
-    void TeleportCard_Click(object sender, RoutedEventArgs e) => ToggleTask(TeleportCard, TeleportStateText, TeleportStatus, o => o.AutoTeleport, (o, v) => o.AutoTeleport = v);
+    void TeleportCard_Click(object sender, RoutedEventArgs e) => ToggleTask(TeleportCard, TeleportMainLabel, TeleportStateText, TeleportStatus, o => o.AutoTeleport, (o, v) => o.AutoTeleport = v);
     void PickupCard_Click(object sender, RoutedEventArgs e) {
-        // AutoPickup not yet implemented — show indicator without changing config
-        PickupStateText.Text = "即将开放";
-        PickupStateText.Foreground = (SolidColorBrush)FindResource("SecondaryForegroundBrush");
+        PickupStateText.Text = "未配置";
+        PickupStateText.Foreground = (SolidColorBrush)FindResource("InactiveBrush");
         var t = new System.Timers.Timer(2000) { AutoReset = false };
         t.Elapsed += (_, _) => {
             if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) { t.Dispose(); return; }
@@ -272,13 +305,12 @@ public partial class MainWindow : Window {
         };
         t.Start();
     }
-    void SkipCard_Click(object sender, RoutedEventArgs e) => ToggleTask(SkipCard, SkipStateText, SkipStatus, o => o.AutoSkip, (o, v) => o.AutoSkip = v);
-    void DismissCard_Click(object sender, RoutedEventArgs e) => ToggleTask(DismissCard, DismissStateText, DismissStatus, o => o.AutoDismiss, (o, v) => o.AutoDismiss = v);
-    void CloseCard_Click(object sender, RoutedEventArgs e) => ToggleTask(CloseCard, CloseStateText, CloseStatus, o => o.AutoClose, (o, v) => o.AutoClose = v);
+    void SkipCard_Click(object sender, RoutedEventArgs e) => ToggleTask(SkipCard, SkipMainLabel, SkipStateText, SkipStatus, o => o.AutoSkip, (o, v) => o.AutoSkip = v);
+    void DismissCard_Click(object sender, RoutedEventArgs e) => ToggleTask(DismissCard, DismissMainLabel, DismissStateText, DismissStatus, o => o.AutoDismiss, (o, v) => o.AutoDismiss = v);
+    void CloseCard_Click(object sender, RoutedEventArgs e) => ToggleTask(CloseCard, CloseMainLabel, CloseStateText, CloseStatus, o => o.AutoClose, (o, v) => o.AutoClose = v);
     void ClickCard_Click(object sender, RoutedEventArgs e) {
-        // AutoClick not yet implemented — show indicator without changing config
-        ClickStateText.Text = "即将开放";
-        ClickStateText.Foreground = (SolidColorBrush)FindResource("SecondaryForegroundBrush");
+        ClickStateText.Text = "未配置";
+        ClickStateText.Foreground = (SolidColorBrush)FindResource("InactiveBrush");
         var t = new System.Timers.Timer(2000) { AutoReset = false };
         t.Elapsed += (_, _) => {
             if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) { t.Dispose(); return; }
@@ -287,6 +319,12 @@ public partial class MainWindow : Window {
         t.Start();
     }
     
+    void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    void MaximizeButton_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    void CloseButton_Click(object sender, RoutedEventArgs e) =>
+        ((App)System.Windows.Application.Current).ExitApplication();
+
     void Window_Closed(object? sender, EventArgs e) {
         StopRuntimeTimer();
         _controller.StatusChanged -= OnStatusChanged;

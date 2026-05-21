@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>logo\logo.ico</ApplicationIcon>
+    <ApplicationIcon>background\logo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +17,7 @@
   <ItemGroup>
     <None Update="config.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="config.json.example" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="logo\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="background\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

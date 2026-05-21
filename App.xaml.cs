@@ -5,8 +5,13 @@ using System.Windows;
 using Forms = System.Windows.Forms;
 
 public partial class App : System.Windows.Application {
+#if DEBUG
+    const string MutexName = "BetterNTE_SingleInstance_Mutex";
+    const string ActivationEventName = "BetterNTE_Activate_MainWindow";
+#else
     const string MutexName = "Global\\BetterNTE_SingleInstance_Mutex";
     const string ActivationEventName = "Global\\BetterNTE_Activate_MainWindow";
+#endif
 
     Mutex? _mutex;
     EventWaitHandle? _activationEvent;
@@ -18,6 +23,16 @@ public partial class App : System.Windows.Application {
     bool _isExiting;
 
     protected override void OnStartup(StartupEventArgs e) {
+#if !DEBUG
+        // 生产环境：先检查管理员权限，在 Mutex 之前执行
+        if (!Environment.IsPrivilegedProcess) {
+            StartElevatedInstance();
+            Shutdown();
+            return;
+        }
+#endif
+
+        // Step: 单实例互斥锁
         bool createdNew;
         _mutex = new Mutex(true, MutexName, out createdNew);
         if (!createdNew) {
@@ -29,15 +44,6 @@ public partial class App : System.Windows.Application {
         Forms.Application.SetHighDpiMode(Forms.HighDpiMode.PerMonitorV2);
         Forms.Application.EnableVisualStyles();
         Forms.Application.SetCompatibleTextRenderingDefault(false);
-
-        // 提权代码暂时注释，方便 dotnet run 调试 UI
-        // if (!Environment.IsPrivilegedProcess) {
-        //     _mutex?.Dispose();
-        //     _mutex = null;
-        //     StartElevatedInstance();
-        //     Shutdown();
-        //     return;
-        // }
 
         AppLog.Initialize();
         AppLog.Write($"Application started. CurrentDirectory={Environment.CurrentDirectory}, BaseDirectory={AppContext.BaseDirectory}");
@@ -61,14 +67,6 @@ public partial class App : System.Windows.Application {
         _controller = new AutomationController();
         _controller.StatusChanged += status => AppLog.Write($"Controller status changed: {status}");
         // LogEmitted is relayed via AppLog.OnLogWritten subscription in AutomationController constructor
-        _controller.GameProcessExited += message => {
-            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
-                return;
-            Dispatcher.BeginInvoke(() => {
-                AppLog.Write(message);
-                _notifyIcon?.ShowBalloonTip(3000, "BetterNTE", "游戏进程已退出，自动化已停止。", Forms.ToolTipIcon.Info);
-            });
-        };
         _controller.ErrorOccurred += message => {
             if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
                 return;
@@ -168,7 +166,7 @@ public partial class App : System.Windows.Application {
 
     static Icon LoadTrayIcon() {
         try {
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "logo", "logo.ico");
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "background", "logo.ico");
             if (!File.Exists(iconPath))
                 return (Icon)SystemIcons.Application.Clone();
 
