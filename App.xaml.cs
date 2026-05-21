@@ -23,14 +23,12 @@ public partial class App : System.Windows.Application {
     bool _isExiting;
 
     protected override void OnStartup(StartupEventArgs e) {
-#if !DEBUG
-        // 生产环境：先检查管理员权限，在 Mutex 之前执行
+        // 先检查管理员权限，在 Mutex 之前执行
         if (!Environment.IsPrivilegedProcess) {
             StartElevatedInstance();
             Shutdown();
             return;
         }
-#endif
 
         // Step: 单实例互斥锁
         bool createdNew;
@@ -46,6 +44,7 @@ public partial class App : System.Windows.Application {
         Forms.Application.SetCompatibleTextRenderingDefault(false);
 
         AppLog.Initialize();
+        CrashDump.Initialize();
         AppLog.Write($"Application started. CurrentDirectory={Environment.CurrentDirectory}, BaseDirectory={AppContext.BaseDirectory}");
 
         ImageMatch.InitializeScreenScale();
