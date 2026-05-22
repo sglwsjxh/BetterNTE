@@ -69,7 +69,7 @@ class Application {
                     AutoDismissTask.Run(frame);
 
                 if (autoSkip && _loopCount % 3 == 0)
-                    AutoSkipTask.Run(frame);
+                    AutoSkipTask.Run(frame, cancellationToken);
 
                 if (autoClose && _loopCount % 2 == 0)
                     AutoCloseTask.Run(frame);

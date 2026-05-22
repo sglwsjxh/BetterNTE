@@ -1,8 +1,8 @@
 using OpenCvSharp;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 static class AutoSkipTask {
 	const double MATCH_THRESHOLD = 0.85;
@@ -11,7 +11,7 @@ static class AutoSkipTask {
 	static DateTime _lastClickAt = DateTime.MinValue;
 	static DateTime _lastLogAt = DateTime.MinValue;
 
-	public static bool Run(Mat frame) {
+	public static bool Run(Mat frame, CancellationToken cancellationToken = default) {
 		var autoskipPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "autoskip.png");
 		var autoskipTemplate = ImageMatch.GetTemplate(autoskipPath);
 		if (autoskipTemplate == null) {
@@ -51,19 +51,23 @@ static class AutoSkipTask {
 		AutoClick.Click(point.X, point.Y);
 		_lastClickAt = now;
 		AppLog.Write($"AutoSkip clicked. Score={autoskipMatch.Value.Score:F4}, Center=({point.X},{point.Y})");
-		
-		Task.Run(() => HandleEverydayCheck());
+
+		// 同步限时 daily check：点击跳过后立即执行，最多 1500ms，超时则放弃
+		TryHandleEverydayCheck(cancellationToken);
 
 		return true;
 	}
 
-	static void HandleEverydayCheck() {
+	static void TryHandleEverydayCheck(CancellationToken cancellationToken) {
 		var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "everydaycheck.png");
 		var checkTemplate = ImageMatch.GetTemplate(checkPath);
 		if (checkTemplate == null) return;
 
-		var start = DateTime.UtcNow;
-		while (DateTime.UtcNow - start < TimeSpan.FromSeconds(2)) {
+		const int timeoutMs = 1500;
+		const int pollIntervalMs = 100;
+		var sw = Stopwatch.StartNew();
+
+		while (!cancellationToken.IsCancellationRequested && sw.ElapsedMilliseconds < timeoutMs) {
 			using var frame = Capture.CaptureScreen();
 			var match = ImageMatch.FindBestMatch(frame, checkTemplate);
 			if (match != null && match.Value.Score >= MATCH_THRESHOLD) {
@@ -72,17 +76,20 @@ static class AutoSkipTask {
 				int w = checkTemplate.Width;
 				int h = checkTemplate.Height;
 
-				// 点击“今日不再提示”复选框
+				// 点击"今日不再提示"复选框
 				AutoClick.Click((int)(cx + w * 0.38), (int)(cy + h * 0.55));
 				Thread.Sleep(300);
 
-				// 点击“确认”按钮
+				// 点击"确认"按钮
 				AutoClick.Click((int)(cx + w * 0.80), (int)(cy + h * 0.85));
 
 				AppLog.Write($"AutoSkip handled everyday check popup.");
-				break;
+				return;
 			}
-			Thread.Sleep(100);
+
+			// 可取消等待，stop 时可提前退出
+			if (cancellationToken.WaitHandle.WaitOne(pollIntervalMs))
+				return;
 		}
 	}
 
