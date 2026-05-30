@@ -82,12 +82,20 @@ static class CrashDump {
 		var timestamp = DateTime.Now;
 		WriteCrashReport(timestamp, e.Exception, true, "Dispatcher.UnhandledException");
 
-		try {
-			AppLog.Write($"[CRASH] Dispatcher unhandled: {e.Exception.GetType().Name}");
-		} catch { }
+        try {
+            AppLog.Write($"[CRASH] Dispatcher unhandled: {e.Exception.GetType().Name}");
+        } catch { }
 
-		// 不设置 e.Handled，让异常继续传播触发 WER dump
-	}
+        try {
+            System.Windows.MessageBox.Show(
+                $"An unexpected error occurred:\n\n{e.Exception.GetType().Name}: {e.Exception.Message}\n\nCrash details have been saved to the logs/crashdumps folder.",
+                "BetterNTE - Unexpected Error",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        } catch { }
+
+        e.Handled = true;
+    }
 
 	static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e) {
 		try {

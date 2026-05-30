@@ -17,7 +17,7 @@ public partial class MainWindow : Window {
         InitializeComponent();
         this.Loaded += MainWindow_Loaded;
         this.StateChanged += (_, _) => {
-            MaximizeIconPath.Data = (PathGeometry)FindResource(WindowState == WindowState.Maximized ? "RestoreIcon" : "MaximizeIcon");
+            MaximizeIconPath.Data = (Geometry)FindResource(WindowState == WindowState.Maximized ? "RestoreIcon" : "MaximizeIcon");
         };
         this.MouseDown += (_, e) => {
             // Only DragMove if not clicking near window controls (top-right 140px)
