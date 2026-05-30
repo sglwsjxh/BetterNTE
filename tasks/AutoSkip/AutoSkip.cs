@@ -52,18 +52,17 @@ static class AutoSkipTask {
 		_lastClickAt = now;
 		AppLog.Write($"AutoSkip clicked. Score={autoskipMatch.Value.Score:F4}, Center=({point.X},{point.Y})");
 
-		// 同步限时 check：点击跳过后立即执行，最多 1500ms，超时则放弃
 		TryHandleCheck(cancellationToken);
 
 		return true;
 	}
 
 	static void TryHandleCheck(CancellationToken cancellationToken) {
-		var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "everydaycheck.png");
+		var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "check.png");
 		var checkTemplate = ImageMatch.GetTemplate(checkPath);
 		if (checkTemplate == null) return;
 
-		const int timeoutMs = 1500;
+		const int timeoutMs = 1000;
 		const int pollIntervalMs = 100;
 		var sw = Stopwatch.StartNew();
 
@@ -71,13 +70,10 @@ static class AutoSkipTask {
 			using var frame = Capture.CaptureScreen();
 			var match = ImageMatch.FindBestMatch(frame, checkTemplate);
 			if (match != null && match.Value.Score >= MATCH_THRESHOLD) {
-				int cx = match.Value.X;
-				int cy = match.Value.Y;
-				int w = checkTemplate.Width;
-				int h = checkTemplate.Height;
+                var point = (X: match.Value.X + checkTemplate.Width / 2, Y: match.Value.Y + checkTemplate.Height / 2);
 
 				// 点击"确认"按钮
-				AutoClick.Click((int)(cx + w * 0.80), (int)(cy + h * 0.85));
+				AutoClick.Click(point.X, point.Y);
 
 				AppLog.Write($"AutoSkip handled check popup.");
 				return;
