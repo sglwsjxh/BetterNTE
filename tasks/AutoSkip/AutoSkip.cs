@@ -52,13 +52,13 @@ static class AutoSkipTask {
 		_lastClickAt = now;
 		AppLog.Write($"AutoSkip clicked. Score={autoskipMatch.Value.Score:F4}, Center=({point.X},{point.Y})");
 
-		// 同步限时 daily check：点击跳过后立即执行，最多 1500ms，超时则放弃
-		TryHandleEverydayCheck(cancellationToken);
+		// 同步限时 check：点击跳过后立即执行，最多 1500ms，超时则放弃
+		TryHandleCheck(cancellationToken);
 
 		return true;
 	}
 
-	static void TryHandleEverydayCheck(CancellationToken cancellationToken) {
+	static void TryHandleCheck(CancellationToken cancellationToken) {
 		var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "everydaycheck.png");
 		var checkTemplate = ImageMatch.GetTemplate(checkPath);
 		if (checkTemplate == null) return;
@@ -79,7 +79,7 @@ static class AutoSkipTask {
 				// 点击"确认"按钮
 				AutoClick.Click((int)(cx + w * 0.80), (int)(cy + h * 0.85));
 
-				AppLog.Write($"AutoSkip handled everyday check popup.");
+				AppLog.Write($"AutoSkip handled check popup.");
 				return;
 			}
 
