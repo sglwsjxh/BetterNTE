@@ -76,12 +76,6 @@ static class AutoSkipTask {
 				int w = checkTemplate.Width;
 				int h = checkTemplate.Height;
 
-				// 点击"今日不再提示"复选框
-				AutoClick.Click((int)(cx + w * 0.38), (int)(cy + h * 0.55));
-
-				if (cancellationToken.WaitHandle.WaitOne(300))
-					return;
-
 				// 点击"确认"按钮
 				AutoClick.Click((int)(cx + w * 0.80), (int)(cy + h * 0.85));
 

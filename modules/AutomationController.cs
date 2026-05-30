@@ -134,9 +134,9 @@ class AutomationController {
             _application.Run(cancellationToken, false);
         } catch (OperationCanceledException) {
         } catch (OpenCVException ex) {
-            HandleFatalError($"OpenCV error: {ex.Message}");
+            HandleFatalError("An OpenCV error occurred. Check the logs for details.", ex);
         } catch (Exception ex) {
-            HandleFatalError(ex.Message);
+            HandleFatalError("An unexpected error occurred. Check the logs for details.", ex);
         } finally {
             if (Status != EngineStatus.Error)
                 SetStatus(EngineStatus.Stopped);
@@ -175,9 +175,9 @@ class AutomationController {
         SetStatus(EngineStatus.Stopped);
     }
 
-    void HandleFatalError(string message) {
-        AppLog.Write($"AutomationController fatal error. Message={message}");
-        ErrorOccurred?.Invoke(message);
+    void HandleFatalError(string userMessage, Exception exception) {
+        AppLog.Write($"AutomationController fatal error. {exception}");
+        ErrorOccurred?.Invoke(userMessage);
         SetStatus(EngineStatus.Error);
     }
 

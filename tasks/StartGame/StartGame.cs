@@ -21,6 +21,13 @@ class StartGame {
 
     public static string ProcessName => PROCESS_NAME;
 
+    public static void ResetForRestart() {
+        _startGame2Template = null;
+        _postLaunchState = PostLaunchState.WaitingForMarker;
+        _postLaunchAttempts = 0;
+        AppLog.Write("StartGame state reset for restart");
+    }
+
     [DllImport("user32.dll")]
     static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
     [DllImport("user32.dll")]
@@ -100,8 +107,7 @@ class StartGame {
     }
 
     public static void RunStartup(GameConfig config, CancellationToken cancellationToken) {
-        _postLaunchState = PostLaunchState.WaitingForMarker;
-        _postLaunchAttempts = 0;
+        ResetForRestart();
 
         if (IsGameRunning()) {
             AppLog.Write("StartGame found existing game process");

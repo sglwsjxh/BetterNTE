@@ -48,6 +48,11 @@ class Application {
 
             using var frame = new Mat();
             while (!cancellationToken.IsCancellationRequested) {
+                if (!IsGameProcessRunning()) {
+                    AppLog.Write("Game process (HTGame) exited — stopping application loop");
+                    break;
+                }
+
                 Capture.CaptureScreen(frame);
 
                 // Snapshot config at each iteration to avoid stale reads
@@ -85,6 +90,7 @@ class Application {
         } catch (OperationCanceledException) {
         } finally {
             ImageMatch.ClearTemplateCache();
+            StartGame.ResetForRestart();
             AppLog.Write("Application loop stopped");
             AppLog.OnLogWritten -= HandleLogWritten;
             StatusChanged?.Invoke(EngineStatus.Stopped);
@@ -114,5 +120,12 @@ class Application {
 
     void HandleLogWritten(string line) {
         LogEmitted?.Invoke(line);
+    }
+
+    static bool IsGameProcessRunning() {
+        var procs = Process.GetProcessesByName("HTGame");
+        var exists = procs.Length > 0;
+        foreach (var p in procs) p.Dispose();
+        return exists;
     }
 }
