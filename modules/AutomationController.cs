@@ -127,8 +127,17 @@ class AutomationController {
             if (cancellationToken.IsCancellationRequested)
                 return;
 
+            var gameHwnd = WindowHelper.FindWindowByProcessName(StartGame.ProcessName);
+            if (gameHwnd != IntPtr.Zero) {
+                AppLog.Write($"AutomationController found game window. Handle=0x{gameHwnd:X8}");
+                WindowHelper.InitScaleFromWindow(gameHwnd);
+            } else {
+                AppLog.Write("AutomationController game window not found, using screen-based scale");
+                ImageMatch.InitializeScreenScale();
+            }
+
             SetStatus(EngineStatus.Running);
-            _application = new Application(_config);
+            _application = new Application(_config, gameHwnd);
             _application.StatusChanged += HandleApplicationStatusChanged;
             _application.EngineExited += HandleApplicationExited;
             _application.Run(cancellationToken, false);

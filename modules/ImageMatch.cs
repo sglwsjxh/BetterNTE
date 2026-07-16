@@ -1,7 +1,8 @@
 using OpenCvSharp;
 
 class ImageMatch {
-    const double BASE_SCREEN_HEIGHT = 1080.0;
+    const double BASE_WIDTH = 1920.0;
+    const double BASE_HEIGHT = 1080.0;
     static readonly object _sync = new();
     static readonly Dictionary<string, Mat> _templateCache = new();
 
@@ -9,8 +10,14 @@ class ImageMatch {
 
     public static void InitializeScreenScale() {
         var screenSize = Capture.GetScreenSize();
-        ScreenScale = screenSize.Height / BASE_SCREEN_HEIGHT;
-        AppLog.Write($"Screen scale initialized. Screen={screenSize.Width}x{screenSize.Height}, Scale={ScreenScale:F4}");
+        ScreenScale = screenSize.Height / BASE_HEIGHT;
+        AppLog.Write($"Screen scale initialized from screen. Screen={screenSize.Width}x{screenSize.Height}, Scale={ScreenScale:F4}");
+    }
+
+    public static void InitializeWithWindowSize(int width, int height) {
+        ScreenScale = width / BASE_WIDTH;
+        ClearTemplateCache();
+        AppLog.Write($"Screen scale initialized from window. Window={width}x{height}, Scale={ScreenScale:F4}");
     }
 
     public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9, double? scale = null) {

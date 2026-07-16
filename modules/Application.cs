@@ -6,6 +6,7 @@ using OpenCvSharp;
 
 class Application {
     readonly GameConfig _config;
+    readonly IntPtr _gameHwnd;
     bool _skipStartGame2;
     int _loopCount;
     CancellationTokenSource? _stopSource;
@@ -17,8 +18,9 @@ class Application {
     public event Action<string>? LogEmitted;
     public event Action? EngineExited;
 
-    public Application(GameConfig config) {
+    public Application(GameConfig config, IntPtr gameHwnd) {
         _config = config;
+        _gameHwnd = gameHwnd;
     }
 
     public void Run() {
@@ -46,6 +48,9 @@ class Application {
             AppLog.Write("StartGame startup finished, entering task loop");
             StatusChanged?.Invoke(EngineStatus.Running);
 
+            // Set auto-click to use window-relative coordinates
+            AutoClick.ActiveWindow = _gameHwnd;
+
             using var frame = new Mat();
             while (!cancellationToken.IsCancellationRequested) {
                 if (!IsGameProcessRunning()) {
@@ -53,7 +58,11 @@ class Application {
                     break;
                 }
 
-                Capture.CaptureScreen(frame);
+                // Capture from game window (or fall back to full screen if no handle)
+                if (_gameHwnd != IntPtr.Zero)
+                    Capture.CaptureWindow(frame, _gameHwnd);
+                else
+                    Capture.CaptureScreen(frame);
 
                 // Snapshot config at each iteration to avoid stale reads
                 var autoTeleport = _config.Options.AutoTeleport;

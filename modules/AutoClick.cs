@@ -13,13 +13,42 @@ static class AutoClick {
     static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, nuint dwExtraInfo);
     [DllImport("user32.dll")]
     static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, nuint dwExtraInfo);
+    [DllImport("user32.dll")]
+    static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct POINT { public int X, Y; }
+
+    public static IntPtr ActiveWindow { get; set; } = IntPtr.Zero;
 
     public static void Click(int x, int y, int holdMilliseconds = 30) {
+        if (ActiveWindow != IntPtr.Zero) {
+            ClickInWindow(ActiveWindow, x, y, holdMilliseconds);
+            return;
+        }
         SetCursorPos(x, y);
         mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
         if (holdMilliseconds > 0)
             Thread.Sleep(holdMilliseconds);
         mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+    }
+
+    public static void ClickInWindow(IntPtr hWnd, int clientX, int clientY, int holdMilliseconds = 30) {
+        var pt = new POINT { X = clientX, Y = clientY };
+        if (ClientToScreen(hWnd, ref pt)) {
+            SetCursorPos(pt.X, pt.Y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            if (holdMilliseconds > 0)
+                Thread.Sleep(holdMilliseconds);
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+        } else {
+            // Fallback: treat as screen coordinates
+            SetCursorPos(clientX, clientY);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            if (holdMilliseconds > 0)
+                Thread.Sleep(holdMilliseconds);
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+        }
     }
 
     public static void SendKeyboard(byte vk) {

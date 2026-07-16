@@ -5,8 +5,9 @@ using OpenCvSharp;
 
 class StartGame {
     const int SW_MAXIMIZE = 3;
-    const double MATCH_THRESHOLD = 0.78;
+    const double MATCH_THRESHOLD = 0.65;
     const string PROCESS_NAME = "HTGame";
+    const string LAUNCHER_PROCESS_NAME = "NTEGame";
     static readonly TimeSpan _postLaunchLogInterval = TimeSpan.FromSeconds(1);
     static Mat? _startGame2Template;
     static PostLaunchState _postLaunchState = PostLaunchState.WaitingForMarker;
@@ -64,6 +65,7 @@ class StartGame {
             return;
 
         var attempts = 0;
+        IntPtr launcherHwnd = IntPtr.Zero;
         while (!cancellationToken.IsCancellationRequested) {
 			attempts++;
             if (attempts > LAUNCH_MAX_ATTEMPTS) {
@@ -71,14 +73,44 @@ class StartGame {
                 return;
             }
 
-			Capture.CaptureScreen(frame);
+            if (launcherHwnd == IntPtr.Zero) {
+                launcherHwnd = WindowHelper.FindWindowByProcessName(LAUNCHER_PROCESS_NAME);
+                if (launcherHwnd != IntPtr.Zero) {
+                    AppLog.Write($"StartGame found launcher window. Handle=0x{launcherHwnd:X8}");
+                    WindowHelper.InitScaleFromWindow(launcherHwnd);
+                    template1.Dispose();
+                    template1 = ImageMatch.GetTemplate(imagePath1);
+                    if (template1 == null) {
+                        AppLog.Write("StartGame template unavailable after rescale. Template1=False");
+                        return;
+                    }
+                }
+            }
+
+            bool captured;
+            if (launcherHwnd != IntPtr.Zero)
+                captured = Capture.CaptureWindow(frame, launcherHwnd);
+            else {
+                Capture.CaptureScreen(frame);
+                captured = true;
+            }
+
+            if (!captured) {
+                if (cancellationToken.WaitHandle.WaitOne(500))
+                    return;
+                continue;
+            }
+
             var match = ImageMatch.FindBestMatch(frame, template1);
             LogStartGameMatch("startgame1", attempts, frame, template1, match, MATCH_THRESHOLD);
             var point = match != null && match.Value.Score >= MATCH_THRESHOLD
                 ? (X: match.Value.X + template1.Width / 2, Y: match.Value.Y + template1.Height / 2)
                 : ((int X, int Y)?)null;
             if (point != null) {
-                AutoClick.Click(point.Value.X, point.Value.Y);
+                if (launcherHwnd != IntPtr.Zero)
+                    AutoClick.ClickInWindow(launcherHwnd, point.Value.X, point.Value.Y);
+                else
+                    AutoClick.Click(point.Value.X, point.Value.Y);
                 AppLog.Write($"StartGame clicked startgame1. Attempts={attempts}, Center=({point.Value.X},{point.Value.Y})");
                 return;
             }
