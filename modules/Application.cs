@@ -7,7 +7,7 @@ using OpenCvSharp;
 class Application {
     readonly GameConfig _config;
     readonly IntPtr _gameHwnd;
-    bool _skipStartGame2;
+    bool _skipStartGame;
     int _loopCount;
     CancellationTokenSource? _stopSource;
     Task? _runTask;
@@ -70,9 +70,9 @@ class Application {
                 if (autoTeleport)
                     autoTeleportFound = AutoTeleportTask.Run(frame);
 
-                if (autoTeleportFound && !_skipStartGame2) {
-                    _skipStartGame2 = true;
-                    AppLog.Write("StartGame2 checks disabled after AutoTeleport target was found");
+                if (autoTeleportFound && !_skipStartGame) {
+                    _skipStartGame = true;
+                    AppLog.Write("StartGame checks disabled after AutoTeleport target was found");
                 }
 
                 if (autoDismiss && _loopCount % 5 == 0)
@@ -84,8 +84,8 @@ class Application {
                 if (autoClose && _loopCount % 2 == 0)
                     AutoCloseTask.Run(frame);
 
-                if (!_skipStartGame2 && _loopCount % 3 == 0)
-                    _skipStartGame2 = StartGame.RunPostLaunch(frame);
+                if (!_skipStartGame && _loopCount % 3 == 0)
+                    _skipStartGame = StartGame.RunPostLaunch(frame);
 
                 _loopCount++;
 

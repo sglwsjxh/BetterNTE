@@ -125,7 +125,7 @@ class StartGame {
         if (_postLaunchState == PostLaunchState.Finished)
             return true;
 
-        var template = EnsureStartGame2Template();
+        var template = EnsureStartGameTemplate();
         if (template == null)
             return false;
 
@@ -136,7 +136,7 @@ class StartGame {
         if (_postLaunchState == PostLaunchState.WaitingForMarker) {
             if (match != null && match.Value.Score >= MATCH_THRESHOLD) {
                 _postLaunchState = PostLaunchState.WaitingForMarkerGone;
-                AppLog.Write($"StartGame detected startgame2. Attempts={_postLaunchAttempts}, Score={match.Value.Score:F4}");
+                AppLog.Write($"StartGame detected startgame. Attempts={_postLaunchAttempts}, Score={match.Value.Score:F4}");
             }
 
             return false;
@@ -145,18 +145,18 @@ class StartGame {
         if (match == null || match.Value.Score < MATCH_THRESHOLD) {
             AutoClick.Click(960, 540);
             _postLaunchState = PostLaunchState.Finished;
-            AppLog.Write($"StartGame clicked center after startgame2 disappeared. Attempts={_postLaunchAttempts}");
+            AppLog.Write($"StartGame clicked center after startgame disappeared. Attempts={_postLaunchAttempts}");
             return true;
         }
 
         return false;
     }
 
-    static Mat? EnsureStartGame2Template() {
+    static Mat? EnsureStartGameTemplate() {
         if (_startGame2Template != null)
             return _startGame2Template;
 
-        var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame2.png");
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame.png");
         _startGame2Template = ImageMatch.GetTemplatePreprocessed(imagePath);
         if (_startGame2Template == null)
             AppLog.Write("StartGame template unavailable. Template2=False");
@@ -172,11 +172,11 @@ class StartGame {
         _lastPostLaunchLogAt = now;
         var state = _postLaunchState.ToString();
         if (match == null) {
-            AppLog.Write($"StartGame2 match. State={state}, Attempt={_postLaunchAttempts}, NoResult, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}");
+            AppLog.Write($"StartGame match. State={state}, Attempt={_postLaunchAttempts}, NoResult, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}");
             return;
         }
 
-        AppLog.Write($"StartGame2 match. State={state}, Attempt={_postLaunchAttempts}, Score={match.Value.Score:F4}, Threshold={MATCH_THRESHOLD:F2}, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}, TopLeft=({match.Value.X},{match.Value.Y})");
+        AppLog.Write($"StartGame match. State={state}, Attempt={_postLaunchAttempts}, Score={match.Value.Score:F4}, Threshold={MATCH_THRESHOLD:F2}, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}, TopLeft=({match.Value.X},{match.Value.Y})");
     }
 
     static void LogStartGameMatch(string name, int attempts, Mat frame, Mat template, (int X, int Y, double Score)? match, double threshold) {
