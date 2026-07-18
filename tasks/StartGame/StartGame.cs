@@ -8,10 +8,7 @@ class StartGame {
     const double MATCH_THRESHOLD = 0.78;
     const string PROCESS_NAME = "HTGame";
     const string LAUNCHER_PROCESS_NAME = "NTEGame";
-    static readonly TimeSpan _postLaunchLogInterval = TimeSpan.FromSeconds(1);
-    static Mat? _startGame2Template;
     static PostLaunchState _postLaunchState = PostLaunchState.WaitingForMarker;
-    static DateTime _lastPostLaunchLogAt = DateTime.MinValue;
     static int _postLaunchAttempts;
 
     enum PostLaunchState {
@@ -23,7 +20,6 @@ class StartGame {
     public static string ProcessName => PROCESS_NAME;
 
     public static void ResetForRestart() {
-        _startGame2Template = null;
         _postLaunchState = PostLaunchState.WaitingForMarker;
         _postLaunchAttempts = 0;
         AppLog.Write("StartGame state reset for restart");
@@ -125,58 +121,24 @@ class StartGame {
         if (_postLaunchState == PostLaunchState.Finished)
             return true;
 
-        var template = EnsureStartGameTemplate();
-        if (template == null)
-            return false;
-
         _postLaunchAttempts++;
-        var match = ImageMatch.FindBestMatch(frame, template);
-        LogPostLaunchMatch(frame, template, match);
+        var found = OcrHelper.FindText(frame, "进入游戏");
 
         if (_postLaunchState == PostLaunchState.WaitingForMarker) {
-            if (match != null && match.Value.Score >= MATCH_THRESHOLD) {
+            if (found != null) {
                 _postLaunchState = PostLaunchState.WaitingForMarkerGone;
-                AppLog.Write($"StartGame detected startgame. Attempts={_postLaunchAttempts}, Score={match.Value.Score:F4}");
+                AppLog.Write($"StartGame detected '进入游戏' via OCR. Attempts={_postLaunchAttempts}");
             }
-
             return false;
         }
 
-        if (match == null || match.Value.Score < MATCH_THRESHOLD) {
+        if (found == null) {
             AutoClick.Click(960, 540);
             _postLaunchState = PostLaunchState.Finished;
-            AppLog.Write($"StartGame clicked center after startgame disappeared. Attempts={_postLaunchAttempts}");
+            AppLog.Write($"StartGame clicked center after '进入游戏' disappeared. Attempts={_postLaunchAttempts}");
             return true;
         }
-
         return false;
-    }
-
-    static Mat? EnsureStartGameTemplate() {
-        if (_startGame2Template != null)
-            return _startGame2Template;
-
-        var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame.png");
-        _startGame2Template = ImageMatch.GetTemplatePreprocessed(imagePath);
-        if (_startGame2Template == null)
-            AppLog.Write("StartGame template unavailable. Template2=False");
-
-        return _startGame2Template;
-    }
-
-    static void LogPostLaunchMatch(Mat frame, Mat template, (int X, int Y, double Score)? match) {
-        var now = DateTime.UtcNow;
-        if (now - _lastPostLaunchLogAt < _postLaunchLogInterval)
-            return;
-
-        _lastPostLaunchLogAt = now;
-        var state = _postLaunchState.ToString();
-        if (match == null) {
-            AppLog.Write($"StartGame match. State={state}, Attempt={_postLaunchAttempts}, NoResult, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}");
-            return;
-        }
-
-        AppLog.Write($"StartGame match. State={state}, Attempt={_postLaunchAttempts}, Score={match.Value.Score:F4}, Threshold={MATCH_THRESHOLD:F2}, Frame={frame.Width}x{frame.Height}, Template={template.Width}x{template.Height}, TopLeft=({match.Value.X},{match.Value.Y})");
     }
 
     static void LogStartGameMatch(string name, int attempts, Mat frame, Mat template, (int X, int Y, double Score)? match, double threshold) {
