@@ -101,7 +101,7 @@ class StartGame {
                 continue;
             }
 
-            var match = ImageMatch.FindBestMatch(frame, template1);
+            var match = ImageMatch.FindBestMatchPreprocessed(frame, template1);
             LogStartGameMatch("startgame1", attempts, frame, template1, match, MATCH_THRESHOLD);
             var point = match != null && match.Value.Score >= MATCH_THRESHOLD
                 ? (X: match.Value.X + template1.Width / 2, Y: match.Value.Y + template1.Height / 2)

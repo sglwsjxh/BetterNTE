@@ -55,6 +55,27 @@ class ImageMatch {
         return (maxLoc.X, maxLoc.Y, maxVal);
     }
 
+    public static (int X, int Y, double Score)? FindBestMatchPreprocessed(Mat bitmap, Mat template) {
+        if (bitmap.Empty()) return null;
+        if (template.Empty()) return null;
+        if (bitmap.Width < template.Width || bitmap.Height < template.Height) return null;
+
+        using var grayFrame = new Mat();
+        Cv2.CvtColor(bitmap, grayFrame, ColorConversionCodes.BGR2GRAY);
+        using var grayTemplate = new Mat();
+        Cv2.CvtColor(template, grayTemplate, ColorConversionCodes.BGR2GRAY);
+        using var blurredFrame = new Mat();
+        Cv2.GaussianBlur(grayFrame, blurredFrame, new OpenCvSharp.Size(3, 3), 0.8);
+        using var blurredTemplate = new Mat();
+        Cv2.GaussianBlur(grayTemplate, blurredTemplate, new OpenCvSharp.Size(3, 3), 0.8);
+
+        using var result = new Mat();
+        Cv2.MatchTemplate(blurredFrame, blurredTemplate, result, TemplateMatchModes.CCoeffNormed);
+        Cv2.MinMaxLoc(result, out _, out var maxVal, out _, out var maxLoc);
+
+        return (maxLoc.X, maxLoc.Y, maxVal);
+    }
+
     public static Mat? GetTemplate(string imagePath, double? scale = null) {
         double actualScale = scale ?? ScreenScale;
         string cacheKey = $"{imagePath}_{actualScale:F4}";
