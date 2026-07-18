@@ -78,10 +78,25 @@ class AutomationController {
             AppLog.Write("Stop: run task cancelled as expected");
         }
 
-        // Task completed — RunEngine's finally already set status
+        // Task completed — clean up and kill processes
+        KillGameProcesses();
         ImageMatch.ClearTemplateCache();
         if (Status != EngineStatus.Stopped)
             SetStatus(EngineStatus.Stopped);
+    }
+
+    static void KillGameProcesses() {
+        foreach (var name in new[] { "NTEGame", "HTGame" }) {
+            try {
+                foreach (var p in Process.GetProcessesByName(name)) {
+                    p.Kill();
+                    AppLog.Write($"Killed process: {name} (PID={p.Id})");
+                    p.Dispose();
+                }
+            } catch (Exception ex) {
+                AppLog.Write($"Failed to kill {name}: {ex.Message}");
+            }
+        }
     }
 
     public GameConfig GetConfig() {
