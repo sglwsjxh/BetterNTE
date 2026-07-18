@@ -52,13 +52,7 @@ class StartGame {
         AppLog.Write($"StartGame launching. GameDir={gameDir}");
         Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"))?.Dispose();
 
-        var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
-		var template1 = ImageMatch.GetTemplatePreprocessed(imagePath1);
-		if (template1 == null) {
-            AppLog.Write("StartGame template unavailable. Template1=False");
-            return;
-		}
-
+        OcrHelper.EnsureInitialized();
 		using var frame = new Mat();
 
         if (cancellationToken.WaitHandle.WaitOne(2000))
@@ -79,24 +73,17 @@ class StartGame {
                     AppLog.Write($"StartGame found launcher window. Handle=0x{launcherHwnd:X8}");
             }
 
-            if (!Capture.CaptureWindow(frame, launcherHwnd)) {
+            FramePreprocessor.CaptureAndPreprocess(frame, launcherHwnd);
+            if (frame.Empty()) {
                 if (cancellationToken.WaitHandle.WaitOne(500))
                     return;
                 continue;
             }
-            FramePreprocessor.CaptureAndPreprocess(frame, launcherHwnd);
 
-            var match = ImageMatch.FindBestMatch(frame, template1);
-            LogStartGameMatch("startgame1", attempts, frame, template1, match, MATCH_THRESHOLD);
-            var point = match != null && match.Value.Score >= MATCH_THRESHOLD
-                ? (X: match.Value.X + template1.Width / 2, Y: match.Value.Y + template1.Height / 2)
-                : ((int X, int Y)?)null;
+            var point = OcrHelper.FindText(frame, "开始");
             if (point != null) {
-                if (launcherHwnd != IntPtr.Zero)
-                    AutoClick.ClickInWindow(launcherHwnd, point.Value.X, point.Value.Y);
-                else
-                    AutoClick.Click(point.Value.X, point.Value.Y);
-                AppLog.Write($"StartGame clicked startgame1. Attempts={attempts}, Center=({point.Value.X},{point.Value.Y})");
+                AutoClick.ClickInWindow(launcherHwnd, point.Value.X, point.Value.Y);
+                AppLog.Write($"StartGame clicked '开始游戏' via OCR. Attempts={attempts}, Center=({point.Value.X},{point.Value.Y})");
                 return;
             }
 
