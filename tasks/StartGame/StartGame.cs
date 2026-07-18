@@ -79,44 +79,12 @@ class StartGame {
                     AppLog.Write($"StartGame found launcher window. Handle=0x{launcherHwnd:X8}");
             }
 
-            bool captured;
-            if (launcherHwnd != IntPtr.Zero)
-                captured = Capture.CaptureWindow(frame, launcherHwnd);
-            else {
-                Capture.CaptureScreen(frame);
-                captured = true;
-            }
-
-            if (!captured) {
+            if (!Capture.CaptureWindow(frame, launcherHwnd)) {
                 if (cancellationToken.WaitHandle.WaitOne(500))
                     return;
                 continue;
             }
-
-            // Frame preprocessing: stretch to 1080p, grayscale, blur
-            int cw = 0, ch = 0;
-            if (launcherHwnd != IntPtr.Zero) {
-                var s = Capture.GetWindowClientSize(launcherHwnd);
-                if (s != null) { cw = s.Value.Width; ch = s.Value.Height; }
-            } else {
-                var ss = Capture.GetScreenSize();
-                cw = ss.Width; ch = ss.Height;
-            }
-            if (cw > 0) {
-                ImageMatch.SetCaptureScale(cw, ch);
-                AutoClick.CaptureScaleX = ImageMatch.ScaleX;
-                AutoClick.CaptureScaleY = ImageMatch.ScaleY;
-            }
-            if (frame.Width != 1920 || frame.Height != 1080) {
-                using var rs = new Mat();
-                Cv2.Resize(frame, rs, new OpenCvSharp.Size(1920, 1080), 0, 0, InterpolationFlags.Linear);
-                rs.CopyTo(frame);
-            }
-            using var g = new Mat();
-            Cv2.CvtColor(frame, g, ColorConversionCodes.BGR2GRAY);
-            using var b = new Mat();
-            Cv2.GaussianBlur(g, b, new OpenCvSharp.Size(3, 3), 0.8);
-            b.CopyTo(frame);
+            FramePreprocessor.CaptureAndPreprocess(frame, launcherHwnd);
 
             var match = ImageMatch.FindBestMatch(frame, template1);
             LogStartGameMatch("startgame1", attempts, frame, template1, match, MATCH_THRESHOLD);

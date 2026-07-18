@@ -57,18 +57,19 @@ static class AutoSkipTask {
 		return true;
 	}
 
-	static void TryHandleCheck(CancellationToken cancellationToken) {
-		var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "check.png");
-		var checkTemplate = ImageMatch.GetTemplatePreprocessed(checkPath);
-		if (checkTemplate == null) return;
+    static void TryHandleCheck(CancellationToken cancellationToken) {
+        var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "check.png");
+        var checkTemplate = ImageMatch.GetTemplatePreprocessed(checkPath);
+        if (checkTemplate == null) return;
 
-		const int timeoutMs = 1000;
-		const int pollIntervalMs = 100;
-		var sw = Stopwatch.StartNew();
+        const int timeoutMs = 1000;
+        const int pollIntervalMs = 100;
+        var sw = Stopwatch.StartNew();
+        using var frame = new Mat();
 
-		while (!cancellationToken.IsCancellationRequested && sw.ElapsedMilliseconds < timeoutMs) {
-			using var frame = Capture.CaptureScreen();
-			var match = ImageMatch.FindBestMatch(frame, checkTemplate);
+        while (!cancellationToken.IsCancellationRequested && sw.ElapsedMilliseconds < timeoutMs) {
+            FramePreprocessor.CaptureAndPreprocess(frame, AutoClick.ActiveWindow);
+            var match = ImageMatch.FindBestMatch(frame, checkTemplate);
 			if (match != null && match.Value.Score >= MATCH_THRESHOLD) {
                 var point = (X: match.Value.X + checkTemplate.Width / 2, Y: match.Value.Y + checkTemplate.Height / 2);
 
