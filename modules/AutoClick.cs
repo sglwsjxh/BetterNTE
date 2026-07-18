@@ -20,13 +20,17 @@ static class AutoClick {
     struct POINT { public int X, Y; }
 
     public static IntPtr ActiveWindow { get; set; } = IntPtr.Zero;
+    public static double CaptureScaleX { get; set; } = 1.0;
+    public static double CaptureScaleY { get; set; } = 1.0;
 
     public static void Click(int x, int y, int holdMilliseconds = 30) {
+        int px = (int)(x * CaptureScaleX);
+        int py = (int)(y * CaptureScaleY);
         if (ActiveWindow != IntPtr.Zero) {
-            ClickInWindow(ActiveWindow, x, y, holdMilliseconds);
+            ClickInWindow(ActiveWindow, px, py, holdMilliseconds);
             return;
         }
-        SetCursorPos(x, y);
+        SetCursorPos(px, py);
         mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
         if (holdMilliseconds > 0)
             Thread.Sleep(holdMilliseconds);

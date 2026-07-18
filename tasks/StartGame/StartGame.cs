@@ -5,7 +5,7 @@ using OpenCvSharp;
 
 class StartGame {
     const int SW_MAXIMIZE = 3;
-    const double MATCH_THRESHOLD = 0.65;
+    const double MATCH_THRESHOLD = 0.78;
     const string PROCESS_NAME = "HTGame";
     const string LAUNCHER_PROCESS_NAME = "NTEGame";
     static readonly TimeSpan _postLaunchLogInterval = TimeSpan.FromSeconds(1);
@@ -53,7 +53,7 @@ class StartGame {
         Process.Start(Path.Combine(gameDir, "NTELauncher", "NTEGame.exe"))?.Dispose();
 
         var imagePath1 = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame1.png");
-		var template1 = ImageMatch.GetTemplate(imagePath1);
+		var template1 = ImageMatch.GetTemplatePreprocessed(imagePath1);
 		if (template1 == null) {
             AppLog.Write("StartGame template unavailable. Template1=False");
             return;
@@ -75,16 +75,8 @@ class StartGame {
 
             if (launcherHwnd == IntPtr.Zero) {
                 launcherHwnd = WindowHelper.FindWindowByProcessName(LAUNCHER_PROCESS_NAME);
-                if (launcherHwnd != IntPtr.Zero) {
+                if (launcherHwnd != IntPtr.Zero)
                     AppLog.Write($"StartGame found launcher window. Handle=0x{launcherHwnd:X8}");
-                    WindowHelper.InitScaleFromWindow(launcherHwnd);
-                    template1.Dispose();
-                    template1 = ImageMatch.GetTemplate(imagePath1);
-                    if (template1 == null) {
-                        AppLog.Write("StartGame template unavailable after rescale. Template1=False");
-                        return;
-                    }
-                }
             }
 
             bool captured;
@@ -101,7 +93,32 @@ class StartGame {
                 continue;
             }
 
-            var match = ImageMatch.FindBestMatchPreprocessed(frame, template1);
+            // Frame preprocessing: stretch to 1080p, grayscale, blur
+            int cw = 0, ch = 0;
+            if (launcherHwnd != IntPtr.Zero) {
+                var s = Capture.GetWindowClientSize(launcherHwnd);
+                if (s != null) { cw = s.Value.Width; ch = s.Value.Height; }
+            } else {
+                var ss = Capture.GetScreenSize();
+                cw = ss.Width; ch = ss.Height;
+            }
+            if (cw > 0) {
+                ImageMatch.SetCaptureScale(cw, ch);
+                AutoClick.CaptureScaleX = ImageMatch.ScaleX;
+                AutoClick.CaptureScaleY = ImageMatch.ScaleY;
+            }
+            if (frame.Width != 1920 || frame.Height != 1080) {
+                using var rs = new Mat();
+                Cv2.Resize(frame, rs, new OpenCvSharp.Size(1920, 1080), 0, 0, InterpolationFlags.Linear);
+                rs.CopyTo(frame);
+            }
+            using var g = new Mat();
+            Cv2.CvtColor(frame, g, ColorConversionCodes.BGR2GRAY);
+            using var b = new Mat();
+            Cv2.GaussianBlur(g, b, new OpenCvSharp.Size(3, 3), 0.8);
+            b.CopyTo(frame);
+
+            var match = ImageMatch.FindBestMatch(frame, template1);
             LogStartGameMatch("startgame1", attempts, frame, template1, match, MATCH_THRESHOLD);
             var point = match != null && match.Value.Score >= MATCH_THRESHOLD
                 ? (X: match.Value.X + template1.Width / 2, Y: match.Value.Y + template1.Height / 2)
@@ -171,7 +188,7 @@ class StartGame {
         }
 
         if (match == null || match.Value.Score < MATCH_THRESHOLD) {
-            AutoClick.Click((int)(960 * ImageMatch.ScreenScale), (int)(540 * ImageMatch.ScreenScale));
+            AutoClick.Click(960, 540);
             _postLaunchState = PostLaunchState.Finished;
             AppLog.Write($"StartGame clicked center after startgame2 disappeared. Attempts={_postLaunchAttempts}");
             return true;
@@ -185,7 +202,7 @@ class StartGame {
             return _startGame2Template;
 
         var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "StartGame", "assets", "startgame2.png");
-        _startGame2Template = ImageMatch.GetTemplate(imagePath);
+        _startGame2Template = ImageMatch.GetTemplatePreprocessed(imagePath);
         if (_startGame2Template == null)
             AppLog.Write("StartGame template unavailable. Template2=False");
 

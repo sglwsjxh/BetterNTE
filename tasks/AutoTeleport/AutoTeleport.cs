@@ -9,7 +9,7 @@ static class AutoTeleportTask {
 
 	public static bool Run(Mat frame) {
 		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoTeleport", "assets", "autoteleport.png");
-		var template = ImageMatch.GetTemplate(imagePath);
+		var template = ImageMatch.GetTemplatePreprocessed(imagePath);
 		if (template == null) {
 			LogThrottled($"AutoTeleport template unavailable. Path={imagePath}");
 			return false;

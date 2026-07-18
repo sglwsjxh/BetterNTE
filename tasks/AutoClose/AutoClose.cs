@@ -11,7 +11,7 @@ static class AutoCloseTask {
 
 	public static bool Run(Mat frame) {
 		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoClose", "assets", "autoclose.png");
-		var template = ImageMatch.GetTemplate(imagePath);
+		var template = ImageMatch.GetTemplatePreprocessed(imagePath);
 		if (template == null) {
 			LogThrottled($"AutoClose template unavailable. Path={imagePath}");
 			return false;

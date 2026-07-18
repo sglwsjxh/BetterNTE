@@ -47,8 +47,6 @@ public partial class App : System.Windows.Application {
         CrashDump.Initialize();
         AppLog.Write($"Application started. CurrentDirectory={Environment.CurrentDirectory}, BaseDirectory={AppContext.BaseDirectory}");
 
-        ImageMatch.InitializeScreenScale();
-
         var config = Config.Load();
         AppLog.Write($"Config loaded. AutoTeleport={config.Options.AutoTeleport}, GameInstallDir={config.GameInstallDir}");
 

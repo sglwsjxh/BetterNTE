@@ -9,7 +9,7 @@ static class AutoDismissTask {
 
 	public static bool Run(Mat frame) {
 		var imagePath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoDismiss", "assets", "autodismiss.png");
-		var template = ImageMatch.GetTemplate(imagePath);
+		var template = ImageMatch.GetTemplatePreprocessed(imagePath);
 		if (template == null) {
 			LogThrottled($"AutoDismiss template unavailable. Path={imagePath}");
 			return false;

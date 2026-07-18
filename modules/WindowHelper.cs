@@ -32,14 +32,4 @@ static class WindowHelper {
         return IntPtr.Zero;
     }
 
-    public static bool InitScaleFromWindow(IntPtr hWnd) {
-        var size = Capture.GetWindowClientSize(hWnd);
-        if (size == null) {
-            AppLog.Write("WindowHelper: window not available, using screen-based scale");
-            ImageMatch.InitializeScreenScale();
-            return false;
-        }
-        ImageMatch.InitializeWithWindowSize(size.Value.Width, size.Value.Height);
-        return true;
-    }
 }

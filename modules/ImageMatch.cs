@@ -1,31 +1,15 @@
 using OpenCvSharp;
 
 class ImageMatch {
-    const double BASE_WIDTH = 1920.0;
-    const double BASE_HEIGHT = 1080.0;
     static readonly object _sync = new();
     static readonly Dictionary<string, Mat> _templateCache = new();
 
-    public static double ScreenScale { get; private set; } = 1.0;
+    public static double ScaleX { get; private set; } = 1.0;
+    public static double ScaleY { get; private set; } = 1.0;
 
-    public static void InitializeScreenScale() {
-        var screenSize = Capture.GetScreenSize();
-        ScreenScale = screenSize.Height / BASE_HEIGHT;
-        AppLog.Write($"Screen scale initialized from screen. Screen={screenSize.Width}x{screenSize.Height}, Scale={ScreenScale:F4}");
-    }
-
-    public static void InitializeWithWindowSize(int width, int height) {
-        ScreenScale = width / BASE_WIDTH;
-        ClearTemplateCache();
-        AppLog.Write($"Screen scale initialized from window. Window={width}x{height}, Scale={ScreenScale:F4}");
-    }
-
-    public static (int X, int Y)? FindImageCenter(Mat bitmap, string imagePath, double threshold = 0.9, double? scale = null) {
-        var template = GetTemplate(imagePath, scale);
-        if (template == null)
-            return null;
-
-        return FindImageCenter(bitmap, template, threshold);
+    public static void SetCaptureScale(int captureWidth, int captureHeight) {
+        ScaleX = captureWidth / 1920.0;
+        ScaleY = captureHeight / 1080.0;
     }
 
     public static (int X, int Y)? FindImageCenter(Mat bitmap, Mat template, double threshold = 0.9) {
@@ -55,60 +39,30 @@ class ImageMatch {
         return (maxLoc.X, maxLoc.Y, maxVal);
     }
 
-    public static (int X, int Y, double Score)? FindBestMatchPreprocessed(Mat bitmap, Mat template) {
-        if (bitmap.Empty()) return null;
-        if (template.Empty()) return null;
-        if (bitmap.Width < template.Width || bitmap.Height < template.Height) return null;
-
-        using var grayFrame = new Mat();
-        Cv2.CvtColor(bitmap, grayFrame, ColorConversionCodes.BGR2GRAY);
-        using var grayTemplate = new Mat();
-        Cv2.CvtColor(template, grayTemplate, ColorConversionCodes.BGR2GRAY);
-        using var blurredFrame = new Mat();
-        Cv2.GaussianBlur(grayFrame, blurredFrame, new OpenCvSharp.Size(3, 3), 0.8);
-        using var blurredTemplate = new Mat();
-        Cv2.GaussianBlur(grayTemplate, blurredTemplate, new OpenCvSharp.Size(3, 3), 0.8);
-
-        using var result = new Mat();
-        Cv2.MatchTemplate(blurredFrame, blurredTemplate, result, TemplateMatchModes.CCoeffNormed);
-        Cv2.MinMaxLoc(result, out _, out var maxVal, out _, out var maxLoc);
-
-        return (maxLoc.X, maxLoc.Y, maxVal);
-    }
-
-    public static Mat? GetTemplate(string imagePath, double? scale = null) {
-        double actualScale = scale ?? ScreenScale;
-        string cacheKey = $"{imagePath}_{actualScale:F4}";
+    public static Mat? GetTemplatePreprocessed(string imagePath) {
+        string cacheKey = $"{imagePath}_pre";
         lock (_sync) {
             if (_templateCache.TryGetValue(cacheKey, out var cached))
                 return cached;
 
-            if (!File.Exists(imagePath))
-            {
-                AppLog.Write($"Template missing. Path={imagePath}, Scale={actualScale:F4}");
+            if (!File.Exists(imagePath)) {
+                AppLog.Write($"Template missing. Path={imagePath}");
                 return null;
             }
 
-            var template = Cv2.ImRead(imagePath, ImreadModes.Color);
+            var template = Cv2.ImRead(imagePath, ImreadModes.Grayscale);
             if (template.Empty()) {
-                AppLog.Write($"Template failed to load. Path={imagePath}, Scale={actualScale:F4}");
+                AppLog.Write($"Template failed to load. Path={imagePath}");
                 template.Dispose();
                 return null;
             }
 
-            var originalWidth = template.Width;
-            var originalHeight = template.Height;
-
-            if (Math.Abs(actualScale - 1.0) > 0.001) {
-                var resized = new Mat();
-                Cv2.Resize(template, resized, new OpenCvSharp.Size(), actualScale, actualScale, InterpolationFlags.Area);
-                template.Dispose();
-                template = resized;
-            }
-
-            _templateCache[cacheKey] = template;
-            AppLog.Write($"Template loaded. Path={imagePath}, Scale={actualScale:F4}, Original={originalWidth}x{originalHeight}, Actual={template.Width}x{template.Height}");
-            return template;
+            var blurred = new Mat();
+            Cv2.GaussianBlur(template, blurred, new OpenCvSharp.Size(3, 3), 0.8);
+            template.Dispose();
+            _templateCache[cacheKey] = blurred;
+            AppLog.Write($"Template preprocessed. Path={imagePath}, Size={blurred.Width}x{blurred.Height}");
+            return blurred;
         }
     }
 

@@ -13,14 +13,14 @@ static class AutoSkipTask {
 
 	public static bool Run(Mat frame, CancellationToken cancellationToken = default) {
 		var autoskipPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "autoskip.png");
-		var autoskipTemplate = ImageMatch.GetTemplate(autoskipPath);
+		var autoskipTemplate = ImageMatch.GetTemplatePreprocessed(autoskipPath);
 		if (autoskipTemplate == null) {
 			LogThrottled($"AutoSkip template unavailable. Path={autoskipPath}");
 			return false;
 		}
 
 		var messagesPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "messages.png");
-		var messagesTemplate = ImageMatch.GetTemplate(messagesPath);
+		var messagesTemplate = ImageMatch.GetTemplatePreprocessed(messagesPath);
 		if (messagesTemplate == null) {
 			LogThrottled($"AutoSkip messages template unavailable. Path={messagesPath}");
 			return false;
@@ -59,7 +59,7 @@ static class AutoSkipTask {
 
 	static void TryHandleCheck(CancellationToken cancellationToken) {
 		var checkPath = Path.Combine(AppContext.BaseDirectory, "tasks", "AutoSkip", "assets", "check.png");
-		var checkTemplate = ImageMatch.GetTemplate(checkPath);
+		var checkTemplate = ImageMatch.GetTemplatePreprocessed(checkPath);
 		if (checkTemplate == null) return;
 
 		const int timeoutMs = 1000;
