@@ -3,6 +3,7 @@ obj/
 bin/
 out/
 tempbuild/
+publish/
 
 # ide
 .vscode/
@@ -12,11 +13,6 @@ tempbuild/
 *.userosscache
 *.sln.docstates
 
-# tooling
-.codegraph/
-.sisyphus/
-AGENTS.md
-
 # config
 config.json
 
@@ -24,8 +20,11 @@ config.json
 logs/
 *.log
 
-# screenshots
+# tmp
 tmp/
+temp/
+*.tmp
+*.bak
 
 # os
 Thumbs.db
