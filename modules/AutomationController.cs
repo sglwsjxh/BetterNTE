@@ -51,7 +51,7 @@ class AutomationController {
         }
     }
 
-    public void Stop() {
+    public void Stop(bool killProcesses = false) {
         Task? runTask;
         lock (_lifecycleSync) {
             if (_status == EngineStatus.Stopped)
@@ -78,8 +78,9 @@ class AutomationController {
             AppLog.Write("Stop: run task cancelled as expected");
         }
 
-        // Task completed — clean up and kill processes
-        KillGameProcesses();
+        // Task completed — clean up and (optionally) kill processes
+        if (killProcesses)
+            KillGameProcesses();
         ImageMatch.ClearTemplateCache();
         if (Status != EngineStatus.Stopped)
             SetStatus(EngineStatus.Stopped);

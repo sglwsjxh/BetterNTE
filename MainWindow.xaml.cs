@@ -140,7 +140,7 @@ public partial class MainWindow : Window {
     void StartButton_Click(object sender, RoutedEventArgs e) {
         if (_controller.IsRunning) {
             var ctrl = _controller;
-            System.Threading.Tasks.Task.Run(() => ctrl.Stop());
+            System.Threading.Tasks.Task.Run(() => ctrl.Stop(killProcesses: true));
         } else {
             var config = Config.Load();
             _controller.Start(config);
